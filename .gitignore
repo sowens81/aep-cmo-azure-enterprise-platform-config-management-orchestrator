@@ -1,0 +1,80 @@
+# -----------------------------
+# Visual Studio / IDEs
+# -----------------------------
+.vs/
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# -----------------------------
+# .NET / build outputs
+# -----------------------------
+bin/
+obj/
+out/
+publish/
+
+# NuGet
+*.nupkg
+packages/
+
+# ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+# Runtime files
+*.dll
+*.exe
+*.pdb
+*.cache
+*.log
+
+# Rider
+.idea/
+
+# -----------------------------
+# Azure Functions
+# -----------------------------
+# Local settings (contains secrets and connection strings)
+local.settings.json
+
+# Function worker cache and artifacts
+\.azure\
+
+# -----------------------------
+# Terraform
+# -----------------------------
+.terraform/
+*.tfstate
+*.tfstate.backup
+crash.log
+override.tf
+override.tf.json
+terraform.tfvars
+*.tfvars
+*.tfvars.json
+terraform.tfvars.local
+.terraform.lock.hcl
+
+# -----------------------------
+# Docker / docker-compose
+# -----------------------------
+# Environment files (may contain secrets)
+.env
+docker-compose.override.yml
+docker-compose.*.local.yml
+
+# Docker image / archive outputs
+*.tar
+
+# -----------------------------
+# Misc
+# -----------------------------
+.DS_Store
+Thumbs.db
+node_modules/
+coverage/
+!example.env.tfvars
+
