@@ -10,39 +10,40 @@ organisation = "xxuk"
 # ============================
 
 hub_subscription_id         = "00000000-0000-0000-0000-000000000000"
-environment_subscription_id = "11111111-1111-1111-1111-111111111111"
+environment_subscription_id = "00000000-0000-0000-0000-000000000000"
+tenant_id                   = "00000000-0000-0000-0000-000000000000"
 
 # ============================
 # Resource Group / Location
 # ============================
 
-resource_group_name = "xxuk-prod-uks-rg-config_sync_hub_orchestrator"
+resource_group_name = "xxuk-prdhub-uks-rg-configmgmt"
 location            = "uksouth"
 
 # ============================
 # Function App
 # ============================
 
-function_name = "xxuk-prod-uks-func-config_sync_hub_orchestrator"
-identity_name = "xxuk-prod-uks-mi-config_sync_hub_orchestrator"
+function_name = "xxuk-prdhub-uks-func-configmgmt"
+identity_name = "xxuk-prdhub-uks-mi-configmgmt"
 
-storage_account_name = "stconfigsyncproduks"
+storage_account_name = "stconfigsyncprdhubuks"
 
 # ============================
 # App Configuration / Key Vault
 # ============================
 
-app_configuration_name = "apcfgconfigsyncproduks"
-key_vault_name         = "kvconfigsyncproduks"
+app_configuration_name = "apcfgconfigsyncprdhubuks"
+key_vault_name         = "kvconfigsyncprdhubuks"
 
-app_configuration_sku = "Standard"
+app_configuration_sku = "free"
 
 # ============================
 # Tags
 # ============================
 
 tags = {
-  environment = "prod"
+  environment = "prdhub"
   workload    = "config-sync"
   owner       = "platform-team"
 }
@@ -59,9 +60,9 @@ idempotency_table = "configSyncIdempotency"
 # ============================
 
 servicebus_config = {
-  resource_group_name = "xxuk-prod-uks-rg-config_sync_hub_orchestrator"
-  namespace_name      = "xxuk-prod-uks-sbus-config_sync_hub_orchestrator"
+  resource_group_name = "xxuk-prdhub-uks-rg-configmgmt"
+  namespace_name      = "xxuk-prdhub-uks-sbus-configmgmt"
   sync_topic_name     = "app-config-sync"
-  event_topic_name     = "app-config-event"
-  result_topic_name   = "app-config-event-telemetry"
+  event_topic_name    = "app-config-event"
+  result_topic_name   = "app-config-result-telemetry"
 }

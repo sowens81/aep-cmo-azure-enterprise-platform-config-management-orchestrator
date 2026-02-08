@@ -1,8 +1,6 @@
 # Why Configuration Management Breaks at Scale (and Why Platforms Feel the Pain First)
 
-You can build a modern Azure platform and still end up with one uncomfortable truth:
-
-When something breaks, nobody can quickly answer, “What’s configured where?”
+You can build a modern Azure platform and still end up with one uncomfortable truth When something breaks, nobody can quickly answer, “What’s configured where?”
 
 That’s not a tooling problem.
 It’s an operating model problem.

@@ -9,6 +9,12 @@ variable "organisation" {
   type        = string
 }
 
+variable "tenant_id" {
+  description = "Azure Active Directory tenant ID"
+  type        = string
+}
+
+
 variable "hub_subscription_id" {
   description = "Subscription ID of the hub where the Service Bus namespace is provisioned"
   type        = string
@@ -56,20 +62,15 @@ variable "key_vault_name" {
 }
 
 variable "app_configuration_sku" {
-  description = "SKU for App Configuration (Free|Standard)"
+  description = "SKU for App Configuration (free|standard)"
   type        = string
-  default     = "Standard"
+  default     = "free"
 }
 
 variable "tags" {
   description = "Tags applied to spoke resources"
   type        = map(string)
   default     = {}
-}
-
-variable "hub_entra_id_group" {
-  description = "Object ID of Entra ID group in hub tenant to grant access to spoke resources"
-  type        = string
 }
 
 variable "idempotency_table" {

@@ -57,6 +57,9 @@ terraform.tfvars
 *.tfvars.json
 terraform.tfvars.local
 .terraform.lock.hcl
+tfplan
+*.tfplan
+.terraform.tfstate.lock.info
 
 # -----------------------------
 # Docker / docker-compose

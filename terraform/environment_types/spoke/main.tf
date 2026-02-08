@@ -27,17 +27,14 @@ module "key_vault" {
 # Lookup built-in role definitions to avoid relying on localized role names
 data "azurerm_role_definition" "appconfig_data_owner" {
   name  = "App Configuration Data Owner"
-  scope = data.azurerm_client_config.current.subscription_id
 }
 
 data "azurerm_role_definition" "kv_secrets_officer" {
   name  = "Key Vault Secrets Officer"
-  scope = data.azurerm_client_config.current.subscription_id
 }
 
 data "azurerm_role_definition" "kv_secrets_reader" {
-  name  = "Key Vault Secrets Reader"
-  scope = data.azurerm_client_config.current.subscription_id
+  name  = "Key Vault Secrets User"
 }
 
 module "function" {

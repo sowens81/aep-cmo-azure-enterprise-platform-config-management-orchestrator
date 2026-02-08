@@ -1,3 +1,4 @@
+
 data "azurerm_client_config" "current" {}
 
 resource "azurerm_resource_group" "this" {
@@ -46,32 +47,26 @@ module "servicebus" {
 
 data "azurerm_role_definition" "appconfig_data_owner" {
   name  = "App Configuration Data Owner"
-  scope = data.azurerm_client_config.current.subscription_id
 }
 
 data "azurerm_role_definition" "appconfig_data_reader" {
   name  = "App Configuration Data Reader"
-  scope = data.azurerm_client_config.current.subscription_id
 }
 
 data "azurerm_role_definition" "kv_secrets_officer" {
   name  = "Key Vault Secrets Officer"
-  scope = data.azurerm_client_config.current.subscription_id
 }
 
 data "azurerm_role_definition" "kv_secrets_reader" {
-  name  = "Key Vault Secrets Reader"
-  scope = data.azurerm_client_config.current.subscription_id
+  name  = "Key Vault Secrets User"
 }
 
 data "azurerm_role_definition" "sbus_data_sender" {
   name  = "Azure Service Bus Data Sender"
-  scope = data.azurerm_client_config.current.subscription_id
 }
 
 data "azurerm_role_definition" "sbus_data_receiver" {
   name  = "Azure Service Bus Data Receiver"
-  scope = data.azurerm_client_config.current.subscription_id
 }
 
 resource "azuread_group" "this" {
@@ -125,12 +120,12 @@ resource "azurerm_role_assignment" "mi_appconfig_data_reader" {
 resource "random_uuid" "mi_servicebus_data_sender" {
   keepers = {
     principal = azurerm_user_assigned_identity.eventgrid.principal_id
-    scope     = module.servicebus.topics[var.servicebus_config.sync_topic_name].id
+    scope     = module.servicebus.topics[var.servicebus_config.sync_topic_name]
   }
 }
 
 resource "azurerm_role_assignment" "mi_servicebus_data_sender" {
-  scope              = module.servicebus.topics[var.servicebus_config.sync_topic_name].id
+  scope              = module.servicebus.topics[var.servicebus_config.sync_topic_name]
   role_definition_id = data.azurerm_role_definition.sbus_data_sender.id
   principal_id       = azurerm_user_assigned_identity.eventgrid.principal_id
   name               = random_uuid.mi_servicebus_data_sender.result
@@ -171,12 +166,12 @@ resource "azurerm_role_assignment" "entraid_group_appconfig_data_reader" {
 resource "random_uuid" "entraid_group_role_servicebus_data_receiver" {
   keepers = {
     principal = azuread_group.this.object_id
-    scope     = module.servicebus.topics[var.servicebus_config.sync_topic_name].id
+    scope     = module.servicebus.topics[var.servicebus_config.sync_topic_name]
   }
 }
 
 resource "azurerm_role_assignment" "entraid_group_servicebus_data_receiver" {
-  scope              = module.servicebus.topics[var.servicebus_config.sync_topic_name].id
+  scope              = module.servicebus.topics[var.servicebus_config.sync_topic_name]
   role_definition_id = data.azurerm_role_definition.sbus_data_receiver.id
   principal_id       = azuread_group.this.object_id
   name               = random_uuid.entraid_group_role_servicebus_data_receiver.result
@@ -186,12 +181,12 @@ resource "azurerm_role_assignment" "entraid_group_servicebus_data_receiver" {
 resource "random_uuid" "entraid_group_role_servicebus_data_sender" {
   keepers = {
     principal = azuread_group.this.object_id
-    scope     = module.servicebus.topics[var.servicebus_config.result_topic_name].id
+    scope     = module.servicebus.topics[var.servicebus_config.result_topic_name]
   }
 }
 
 resource "azurerm_role_assignment" "entraid_group_servicebus_data_sender" {
-  scope              = module.servicebus.topics[var.servicebus_config.result_topic_name].id
+  scope              = module.servicebus.topics[var.servicebus_config.result_topic_name]
   role_definition_id = data.azurerm_role_definition.sbus_data_sender.id
   principal_id       = azuread_group.this.object_id
   name               = random_uuid.entraid_group_role_servicebus_data_sender.result
@@ -210,13 +205,13 @@ resource "azurerm_eventgrid_event_subscription" "appconfig_shared_to_servicebus"
 
   advanced_filter {
     string_contains {
-      key   = "data.keyLabel"
-      values = [ "shared" ]
+      key    = "data.keyLabel"
+      values = ["shared"]
     }
   }
 
   # Send to Service Bus Topic
-  service_bus_topic_endpoint_id = module.servicebus.topics[var.servicebus_config.sync_topic_name].id
+  service_bus_topic_endpoint_id = module.servicebus.topics[var.servicebus_config.sync_topic_name]
 
   retry_policy {
     max_delivery_attempts = 10
@@ -228,3 +223,4 @@ resource "azurerm_eventgrid_event_subscription" "appconfig_shared_to_servicebus"
     user_assigned_identity = azurerm_user_assigned_identity.eventgrid.id
   }
 }
+  

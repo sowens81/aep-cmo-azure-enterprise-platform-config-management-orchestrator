@@ -69,8 +69,8 @@ idempotency_table = "configSyncIdempotency"
 # ============================
 
 servicebus_config = {
-  resource_group_name = "xxuk-prod-uks-rg-config_sync_hub_orchestrator"
-  namespace_name      = "xxuk-prod-uks-sbus-config_sync_hub_orchestrator"
+  resource_group_name = "xxuk-prdhub-uks-rg-configmgmt"
+  namespace_name      = "xxuk-prdhub-uks-sbus-configmgmt"
   sync_topic_name     = "app-config-sync"
   result_topic_name   = "app-config-sync-telemetry"
 }

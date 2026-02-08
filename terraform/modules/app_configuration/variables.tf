@@ -14,12 +14,12 @@ variable "location" {
 }
 
 variable "sku" {
-  description = "SKU for App Configuration (Free|Standard)"
+  description = "SKU for App Configuration (free|developer|standard)"
   type        = string
-  default     = "Standard"
+  default     = "free"
   validation {
-    condition     = contains(["Free", "Standard"], var.sku)
-    error_message = "sku must be either 'Free' or 'Standard'"
+    condition     = contains(["free", "developer", "standard"], var.sku)
+    error_message = "sku must be either 'free', 'developer', or 'standard'"
   }
 }
 
