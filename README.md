@@ -31,6 +31,7 @@ Proof-of-concept (PoC) implementation of hub → spoke configuration and secret 
   - [Contributing](#contributing)
   - [License](#license)
   - [Documentation](#documentation)
+  - [Terraform Commands](#terraform-commands)
 
 ## What is AEP-CMO?
 
@@ -235,3 +236,12 @@ MIT licensed. See [LICENSE](LICENSE).
 ## Documentation
 
 - Terraform/bootstrapping context: [docs/copilot-context.md](docs/copilot-context.md)
+
+
+## Terraform Commands
+
+terraform init
+terraform plan -var-file="env.tfvars" -out="tfplan" -input=false
+terraform apply "tfplan"
+
+terraform destroy -var-file="env.tfvars" -auto-approve -input=false

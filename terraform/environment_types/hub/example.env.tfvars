@@ -63,6 +63,10 @@ servicebus_config = {
   resource_group_name = "xxuk-prdhub-uks-rg-configmgmt"
   namespace_name      = "xxuk-prdhub-uks-sbus-configmgmt"
   sync_topic_name     = "app-config-sync"
-  event_topic_name    = "app-config-event"
+  app_config_event_topic_name    = "app-config-event"
+  key_vault_event_topic_name = "key-vault-event"
   result_topic_name   = "app-config-result-telemetry"
 }
+
+
+entraid_spoke_access_group_name = "so-demo-spoke-config-management-consumers-entraid-group"

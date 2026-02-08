@@ -27,14 +27,17 @@ module "key_vault" {
 # Lookup built-in role definitions to avoid relying on localized role names
 data "azurerm_role_definition" "appconfig_data_owner" {
   name  = "App Configuration Data Owner"
+  scope = "/subscriptions/${data.azurerm_client_config.current.subscription_id}"
 }
 
 data "azurerm_role_definition" "kv_secrets_officer" {
   name  = "Key Vault Secrets Officer"
+  scope = "/subscriptions/${data.azurerm_client_config.current.subscription_id}"
 }
 
 data "azurerm_role_definition" "kv_secrets_reader" {
   name  = "Key Vault Secrets User"
+  scope = "/subscriptions/${data.azurerm_client_config.current.subscription_id}"
 }
 
 module "function" {
@@ -117,7 +120,7 @@ resource "azurerm_role_assignment" "cc_kv_secrets_officer" {
 module "servicebus_subscription_sync" {
   source = "../../modules/service_bus_subscription"
 
-  providers = { azurerm = azurerm.hub }
+  providers                                = { azurerm = azurerm.hub }
   servicebus_namespace_name                = var.servicebus_config.namespace_name
   servicebus_namespace_resource_group_name = var.servicebus_config.resource_group_name
   topic_name                               = var.servicebus_config.sync_topic_name

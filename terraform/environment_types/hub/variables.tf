@@ -36,6 +36,13 @@ variable "location" {
   default     = "uksouth"
 }
 
+variable "entraid_spoke_access_group_name" {
+  description = "Name of the Entra ID group that will be granted access to the Service Bus topics in the hub"
+  type        = string
+  default     = "so-demo-spoke-config-management-consumers-entraid-group"
+
+}
+
 variable "function_name" {
   description = "Name for the Function App"
   type        = string
@@ -85,6 +92,8 @@ variable "servicebus_config" {
     resource_group_name = string
     namespace_name      = string
     sync_topic_name     = string
+    app_config_event_topic_name    = string
+    key_vault_event_topic_name = string
     result_topic_name   = string
   })
 }

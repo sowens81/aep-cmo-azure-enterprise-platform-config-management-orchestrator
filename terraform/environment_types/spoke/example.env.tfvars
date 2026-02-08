@@ -42,11 +42,11 @@ app_configuration_sku = "Standard"
 # ============================
 
 tags = {
-  environment  = "dev"
-  workload     = "config-sync"
-  owner        = "Steve Owens"
-  type         = "proof of concept"
-  region       = "uksouth"
+  environment = "dev"
+  workload    = "config-sync"
+  owner       = "Steve Owens"
+  type        = "proof of concept"
+  region      = "uksouth"
 
 }
 
