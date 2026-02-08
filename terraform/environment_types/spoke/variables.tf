@@ -83,7 +83,8 @@ variable "servicebus_config" {
   type = object({
     resource_group_name = string
     namespace_name      = string
-    sync_topic_name     = string
+    app_config_sync_topic_name     = string
+    key_vault_sync_topic_name     = string
     result_topic_name   = string
   })
 }

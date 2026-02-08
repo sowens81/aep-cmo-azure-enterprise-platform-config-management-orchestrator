@@ -16,15 +16,15 @@ environment_subscription_id = "11111111-1111-1111-1111-111111111111"
 # Resource Group / Location
 # ============================
 
-resource_group_name = "xxuk-dev-uks-rg-config_sync_spoke_orchestrator"
+resource_group_name = "xxuk-dev-uks-rg-configmgmt"
 location            = "uksouth"
 
 # ============================
 # Function App
 # ============================
 
-function_name = "xxuk-dev-uks-func-config_sync_spoke_orchestrator"
-identity_name = "xxuk-dev-uks-mi-config_sync_spoke_orchestrator"
+function_name = "xxuk-dev-uks-func-configmgmt"
+identity_name = "xxuk-dev-uks-mi-configmgmt"
 
 storage_account_name = "stconfigsyncdevuks"
 
@@ -71,6 +71,7 @@ idempotency_table = "configSyncIdempotency"
 servicebus_config = {
   resource_group_name = "xxuk-prdhub-uks-rg-configmgmt"
   namespace_name      = "xxuk-prdhub-uks-sbus-configmgmt"
-  sync_topic_name     = "app-config-sync"
+  app_config_sync_topic_name     = "app-config-sync"
+  key_vault_sync_topic_name             = "key-vault-sync"
   result_topic_name   = "app-config-sync-telemetry"
 }
