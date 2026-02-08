@@ -25,6 +25,7 @@ Proof-of-concept (PoC) implementation of hub → spoke configuration and secret 
   - [Configuration](#configuration)
     - [Required environment variables](#required-environment-variables)
   - [Infrastructure (Terraform)](#infrastructure-terraform)
+  - [Cost estimate (PoC)](#cost-estimate-poc)
   - [Observability](#observability)
   - [Security](#security)
   - [Contributing](#contributing)
@@ -188,6 +189,25 @@ Notes:
 - The hub template provisions hub App Configuration/Key Vault and creates Service Bus topics used for sync and results.
 - The spoke template provisions spoke App Configuration/Key Vault and the spoke Function App, and creates a per-spoke Service Bus subscription in the hub namespace.
 - Ensure the Function App **app settings names** match the required environment variables listed in [Configuration](#configuration).
+
+## Cost estimate (PoC)
+
+Estimate for **1 month** in **£ (GBP)** using the prices and scenario you provided.
+
+Assumptions used for the estimate:
+
+- 1 Hub + 2 Spokes
+- 100 pipeline/terraform runs per day per environment
+- 10–50 calls per run across App Configuration + Key Vault (assumed split ~50/50)
+
+| Environment | Service Bus (Std) | Event Grid (Basic) | Functions (Consumption) | App Configuration | Key Vault (Std transactions) | Est. subtotal / month |
+|---|---:|---:|---:|---:|---:|---:|
+| Hub | ~£8.00 | £0.00 (well under free tier) | £0.00 (well under free tier) | £0.00* | £0.03–£0.17 | ~£8.03–£8.17 |
+| Spoke 1 | £0.00 | £0.00 | £0.00 | £0.00* | £0.03–£0.17 | £0.03–£0.17 |
+| Spoke 2 | £0.00 | £0.00 | £0.00 | £0.00* | £0.03–£0.17 | £0.03–£0.17 |
+| **Total (1 Hub + 2 Spokes)** |  |  |  |  |  | **~£8.09–£8.51 / month** |
+
+\*App Configuration is shown as £0.00 assuming the **Free** tier is sufficient. Under your pipeline assumptions, App Configuration usage is likely **500–2,500 requests/day per environment**, so environments may exceed the **1,000 requests/day** free tier depending on the actual number of App Config calls per run. App Configuration paid-tier cost is not included because only the Free tier limits were provided.
 
 ## Observability
 
