@@ -10,6 +10,7 @@ using ConfigManagement.Sync.Orchestrator.Application;
 using ConfigManagement.Sync.Orchestrator.Application.Interfaces;
 using ConfigManagement.Sync.Orchestrator.Application.Orchestration;
 using ConfigManagement.Sync.Orchestrator.Functions.Metadata;
+using ConfigManagement.Sync.Orchestrator.Infrastructure.KeyVault;
 using ConfigurationSyncOrchestrator.Domain.Factories;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Builder;
@@ -17,6 +18,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 var builder = FunctionsApplication.CreateBuilder(args);
 
@@ -103,26 +105,40 @@ builder.Services.AddSingleton<IKeyVaultCredentialFactory>(sp =>
     return new KeyVaultCredentialFactory(options, logger);
 });
 
-builder.Services.AddSingleton<ILocalKeyVaultSecretClient>(sp =>
-{
-    var config = sp.GetRequiredService<ConfigFactory>();
-    var logger = sp.GetRequiredService<ILogger<KeyVaultSecretClient>>();
-    var credentialFactory = sp.GetRequiredService<IKeyVaultCredentialFactory>();
+builder.Services.AddScoped<ILocalKeyVaultSecretClient, LocalKeyVaultSecretClient>();
 
-    var options = new KeyVaultOptions { VaultUri = config.LocalKeyVaultUri };
+builder.Services.AddScoped<IHubKeyVaultSecretClient, HubKeyVaultSecretClient>();
 
-    return new KeyVaultSecretClient(options, credentialFactory, logger);
-});
 
-builder.Services.AddSingleton<IHubKeyVaultSecretClient>(sp =>
-{
-    var config = sp.GetRequiredService<ConfigFactory>();
-    var logger = sp.GetRequiredService<ILogger<KeyVaultSecretClient>>();
-    var credentialFactory = sp.GetRequiredService<IKeyVaultCredentialFactory>();
+builder.Configuration.GetSection(HubKeyVaultOptions.ConfigKey).Bind()
 
-    var options = new KeyVaultOptions { VaultUri = config.HubKeyVaultUri };
+    IConfiguration.
 
-    return new KeyVaultSecretClient(options, credentialFactory, logger);
-});
+IOptions 
+Environment.GetEnvironmentVariable("KEYVAULT__HubKeyVaultClient);
+
+
+//builder.Services.AddScope<ILocalKeyVaultSecretClient>(sp =>
+//{
+//    var config = sp.GetRequiredService<ConfigFactory>();
+
+//    var logger = sp.GetRequiredService<ILogger<KeyVaultSecretClient>>();
+//    var credentialFactory = sp.GetRequiredService<IKeyVaultCredentialFactory>();
+
+//    var options = new KeyVaultOptions { VaultUri = config.LocalKeyVaultUri };
+
+//    return new KeyVaultSecretClient(options, credentialFactory, logger);
+//});
+
+//builder.Services.AddSingleton<IHubKeyVaultSecretClient>(sp =>
+//{
+//    var config = sp.GetRequiredService<ConfigFactory>();
+//    var logger = sp.GetRequiredService<ILogger<KeyVaultSecretClient>>();
+//    var credentialFactory = sp.GetRequiredService<IKeyVaultCredentialFactory>();
+
+//    var options = new KeyVaultOptions { VaultUri = config.HubKeyVaultUri };
+
+//    return new KeyVaultSecretClient(options, credentialFactory, logger);
+//});
 
 builder.Build().Run();

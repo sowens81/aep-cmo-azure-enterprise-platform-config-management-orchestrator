@@ -6,21 +6,21 @@ using Microsoft.Extensions.Logging;
 
 namespace ConfigManagement.Shared.KeyVault;
 
-public sealed class KeyVaultSecretClient : IKeyVaultSecretClient, ILocalKeyVaultSecretClient, IHubKeyVaultSecretClient
+public abstract class KeyVaultSecretClient : IKeyVaultSecretClient
 {
     private readonly SecretClient _client;
     private readonly ILogger<KeyVaultSecretClient> _logger;
 
-    public KeyVaultSecretClient(
-        KeyVaultOptions options,
+    protected KeyVaultSecretClient(
+        IKeyVaultOptions options,
         IKeyVaultCredentialFactory credentialFactory,
         ILogger<KeyVaultSecretClient> logger)
     {
-        if (string.IsNullOrWhiteSpace(options.VaultUri))
-            throw new ArgumentException("VaultUri is required.", nameof(options));
+        if (string.IsNullOrWhiteSpace(options.KeyVaultUri))
+            throw new ArgumentException("VaultUri is required.", nameof(options.KeyVaultUri));
 
         _client = new SecretClient(
-            new Uri(options.VaultUri),
+            new Uri(options.KeyVaultUri),
             credentialFactory.CreateCredential());
 
         _logger = logger;
