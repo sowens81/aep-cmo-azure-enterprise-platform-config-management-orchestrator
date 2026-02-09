@@ -15,7 +15,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="AppConfiguration\" />
     <Folder Include="Configuration\" />
     <Folder Include="Idempotency\" />
     <Folder Include="ServiceBus\" />

@@ -5,7 +5,9 @@ using ConfigManagement.Shared.KeyVault.Authentication;
 using ConfigManagement.Shared.KeyVault.Interfaces;
 using ConfigManagement.Shared.KeyVault.Options;
 using ConfigManagement.Sync.Orchestrator.Application;
+using ConfigManagement.Sync.Orchestrator.Application.Context;
 using ConfigManagement.Sync.Orchestrator.Application.Interfaces;
+using ConfigManagement.Sync.Orchestrator.Application.Options;
 using ConfigManagement.Sync.Orchestrator.Application.Orchestration;
 using ConfigManagement.Sync.Orchestrator.Infrastructure.Interfaces;
 using ConfigManagement.Sync.Orchestrator.Infrastructure.KeyVault;
@@ -26,6 +28,26 @@ builder.ConfigureFunctionsWebApplication();
 builder
     .Services.AddApplicationInsightsTelemetryWorkerService()
     .ConfigureFunctionsApplicationInsights();
+
+builder.Services
+    .AddOptions<ServiceMetaDataOptions>()
+    .Bind(builder.Configuration)
+    .Validate(o =>
+        !string.IsNullOrWhiteSpace(o.Organisation) &&
+        !string.IsNullOrWhiteSpace(o.Region) &&
+        !string.IsNullOrWhiteSpace(o.EnvironmentTier) &&
+        !string.IsNullOrWhiteSpace(o.EnvironmentName) &&
+        !string.IsNullOrWhiteSpace(o.ServiceName),
+        "Environment context configuration is invalid")
+    .ValidateOnStart();
+
+builder.Services.AddSingleton<IServiceMetadata>(sp =>
+{
+    var options = sp.GetRequiredService<IOptions<ServiceMetaDataOptions>>().Value;
+
+    return new ServiceMetadataContext(options);
+});
+
 
 //// -------------------------------------------------
 //// Service Bus (Result publishing)

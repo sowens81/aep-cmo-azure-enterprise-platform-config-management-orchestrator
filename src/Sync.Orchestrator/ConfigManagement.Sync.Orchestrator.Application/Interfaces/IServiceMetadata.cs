@@ -5,5 +5,6 @@ public interface IServiceMetadata
     string Organisation { get; }
     string Region { get; }
     string EnvironmentTier { get; }
+    string EnvironmentName { get; }
     string ServiceName { get; }
 }

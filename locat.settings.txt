@@ -1,0 +1,51 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    
+    // -----------------------------
+    // Environment Context configuration
+    // -----------------------------
+    "ORGANISATION": "my-org",
+    "REGION": "eu-west",
+    "ENVIRONMENT_TIER": "prod",
+    "ENVIRONMENT_NAME": "production",
+    "SERVICE_NAME": "config-sync-orchestrator",
+
+    // -----------------------------
+    // Key Vault configuration
+    // -----------------------------
+    "KeyVault:Spoke:Endpoint": "https://<spoke-kv>.vault.azure.net/",
+    "KeyVault:Hub:Endpoint": "https://<hub-kv>.vault.azure.net/",
+    "KeyVault:Auth:AuthType": "ManagedIdentity",
+
+    // -----------------------------
+    // App Configuration configuration
+    // -----------------------------
+    "AppConfiguration:Endpoint": "https://name.azconfig.io",
+    "AppConfiguration:Auth:AuthType": "ManagedIdentity",
+
+    // -----------------------------
+    // Service Bus configuration
+    // -----------------------------
+    "ServiceBus:Endpoint": "https://name.servicebus.windows.net",
+    "ServiceBus:Auth:AuthType": "ManagedIdentity",
+
+    "ServiceBus:Topics:KeyVaultEvent:TopicName": "key-vault-event",
+    "ServiceBus:Topics:KeyVaultEvent:SubscriptionName": "key-vault-event-subscription",
+
+    "ServiceBus:Topics:AppConfigEvent:TopicName": "app-config-event",
+    "ServiceBus:Topics:AppConfigEvent:SubscriptionName": "app-config-event-subscription",
+
+    "ServiceBus:Topics:ResultTelemetry:TopicName": "result-telemetry",
+    "ServiceBus:Topics:ResultTelemetry:SubscriptionName": "",
+
+    // -----------------------------
+    // Storage Account configuration
+    // -----------------------------
+    "StorageAccount:Blob:Endpoint": "https://name.blob.core.windows.net",
+    "StorageAccount:Table:Endpoint": "https://name.table.core.windows.net",
+    "StorageAccount:Table:IdempotencyTableName": "idempotency"
+  }
+}

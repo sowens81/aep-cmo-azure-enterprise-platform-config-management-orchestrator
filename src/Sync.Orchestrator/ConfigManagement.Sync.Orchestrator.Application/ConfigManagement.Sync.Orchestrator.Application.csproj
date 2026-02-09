@@ -6,6 +6,7 @@
     <ProjectReference Include="..\..\Shared\ConfigManagement.Shared.KeyVault\ConfigManagement.Shared.KeyVault.csproj" />
     <ProjectReference Include="..\..\Shared\ConfigManagement.Shared.ServiceBus\ConfigManagement.Shared.ServiceBus.csproj" />
     <ProjectReference Include="..\ConfigManagement.Sync.Orchestrator.Domain\ConfigManagement.Sync.Orchestrator.Domain.csproj" />
+    <ProjectReference Include="..\ConfigManagement.Sync.Orchestrator.Infrastructure\ConfigManagement.Sync.Orchestrator.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>
