@@ -1,6 +1,6 @@
 ﻿using Azure.Core;
 
-namespace ConfigManagement.Shared.KeyVault.Authentication;
+namespace ConfigManagement.Shared.KeyVault.Interfaces;
 
 public interface IKeyVaultCredentialFactory
 {

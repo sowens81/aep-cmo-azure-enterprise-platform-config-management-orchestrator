@@ -1,14 +1,8 @@
-﻿using ConfigManagement.Shared.KeyVault.Options;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using ConfigManagement.Sync.Orchestrator.Infrastructure.Interfaces;
 
 namespace ConfigManagement.Sync.Orchestrator.Infrastructure.Options;
 
-public class HubKeyVaultOptions : IKeyVaultOptions
+public sealed class HubKeyVaultOptions : IHubKeyVaultOptions
 {
-    public required string KeyVaultUri { get; init; }
-    public static readonly string ConfigKey = String.Empty;
+    public string Endpoint { get; init; } = default!;
 }

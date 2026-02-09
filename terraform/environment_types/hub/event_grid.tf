@@ -98,7 +98,7 @@ resource "azurerm_eventgrid_system_topic_event_subscription" "key_vault_shared_t
     module.servicebus,
     module.key_vault,
     azurerm_user_assigned_identity.eventgrid,
-    azurerm_role_assignment.eg_mi_kv_secrets_reader,
+    azurerm_role_assignment.eg_mi_kv_secrets_user,
     azurerm_role_assignment.eg_mi_servicebus_data_sender
   ]
 }

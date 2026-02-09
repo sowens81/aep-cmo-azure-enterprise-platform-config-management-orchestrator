@@ -60,7 +60,6 @@ idempotency_table = "configSyncIdempotency"
 # ============================
 
 servicebus_config = {
-  resource_group_name         = "xxuk-prdhub-uks-rg-configmgmt"
   namespace_name              = "xxuk-prdhub-uks-sbus-configmgmt"
   app_config_sync_topic_name             = "app-config-sync"
   app_config_event_topic_name = "app-config-event"

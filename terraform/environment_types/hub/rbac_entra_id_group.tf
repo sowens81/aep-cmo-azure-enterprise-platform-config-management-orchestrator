@@ -13,9 +13,9 @@ resource "random_uuid" "entraid_group_role_kv" {
   }
 }
 
-resource "azurerm_role_assignment" "entraid_group_kv_secrets_reader" {
+resource "azurerm_role_assignment" "entraid_group_kv_secrets_user" {
   scope              = module.key_vault.id
-  role_definition_id = data.azurerm_role_definition.kv_secrets_reader.id
+  role_definition_id = data.azurerm_role_definition.kv_secrets_user.id
   principal_id       = azuread_group.this.object_id
   name               = random_uuid.entraid_group_role_kv.result
 }
@@ -35,34 +35,47 @@ resource "azurerm_role_assignment" "entraid_group_appconfig_data_reader" {
   name               = random_uuid.entraid_group_role_appconfig.result
 }
 
-## Service Bus Data Receiver - App Config Sync
-resource "random_uuid" "entraid_group_role_servicebus_data_receiver" {
+## Service Bus Data Receiver - App Config Sync Topic
+resource "random_uuid" "entraid_group_role_servicebus_data_receiver_appconfig" {
   keepers = {
     principal = azuread_group.this.object_id
     scope     = module.servicebus.topics[var.servicebus_config.app_config_sync_topic_name]
   }
 }
 
-resource "azurerm_role_assignment" "entraid_group_servicebus_data_receiver" {
+resource "azurerm_role_assignment" "entraid_group_servicebus_data_receiver_appconfig" {
   scope              = module.servicebus.topics[var.servicebus_config.app_config_sync_topic_name]
   role_definition_id = data.azurerm_role_definition.sbus_data_receiver.id
   principal_id       = azuread_group.this.object_id
-  name               = random_uuid.entraid_group_role_servicebus_data_receiver.result
+  name               = random_uuid.entraid_group_role_servicebus_data_receiver_appconfig.result
+}
+
+## Service Bus Data Receiver - Key Vault Sync Topic
+resource "random_uuid" "entraid_group_role_servicebus_data_receiver_keyvault" {
+  keepers = {
+    principal = azuread_group.this.object_id
+    scope     = module.servicebus.topics[var.servicebus_config.key_vault_event_topic_name]
+  }
+}
+
+resource "azurerm_role_assignment" "entraid_group_servicebus_data_receiver_keyvault" {
+  scope              = module.servicebus.topics[var.servicebus_config.key_vault_event_topic_name]
+  role_definition_id = data.azurerm_role_definition.sbus_data_receiver.id
+  principal_id       = azuread_group.this.object_id
+  name               = random_uuid.entraid_group_role_servicebus_data_receiver_keyvault.result
 }
 
 ## Service Bus Data Sender
-resource "random_uuid" "entraid_group_role_servicebus_data_sender" {
+resource "random_uuid" "entraid_group_role_servicebus_data_sender_result" {
   keepers = {
     principal = azuread_group.this.object_id
     scope     = module.servicebus.topics[var.servicebus_config.result_topic_name]
   }
 }
 
-
-
-resource "azurerm_role_assignment" "entraid_group_servicebus_data_sender" {
+resource "azurerm_role_assignment" "entraid_group_servicebus_data_sender_result" {
   scope              = module.servicebus.topics[var.servicebus_config.result_topic_name]
   role_definition_id = data.azurerm_role_definition.sbus_data_sender.id
   principal_id       = azuread_group.this.object_id
-  name               = random_uuid.entraid_group_role_servicebus_data_sender.result
+  name               = random_uuid.entraid_group_role_servicebus_data_sender_result.result
 }

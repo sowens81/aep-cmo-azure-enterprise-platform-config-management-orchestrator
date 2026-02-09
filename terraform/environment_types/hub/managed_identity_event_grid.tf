@@ -29,9 +29,9 @@ resource "random_uuid" "eg_mi_kv" {
   }
 }
 
-resource "azurerm_role_assignment" "eg_mi_kv_secrets_reader" {
+resource "azurerm_role_assignment" "eg_mi_kv_secrets_user" {
   scope              = module.key_vault.id
-  role_definition_id = data.azurerm_role_definition.kv_secrets_reader.id
+  role_definition_id = data.azurerm_role_definition.kv_secrets_user.id
   principal_id       = azurerm_user_assigned_identity.eventgrid.principal_id
   name               = random_uuid.eg_mi_kv.result
 }

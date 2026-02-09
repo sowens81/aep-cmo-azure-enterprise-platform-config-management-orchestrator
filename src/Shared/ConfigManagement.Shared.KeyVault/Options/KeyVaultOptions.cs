@@ -1,11 +1,8 @@
-﻿namespace ConfigManagement.Shared.KeyVault.Options;
+﻿using ConfigManagement.Shared.KeyVault.Interfaces;
 
-public sealed class KeyVaultOptions
-{
-    public string VaultUri { get; init; } = default!;
-}
+namespace ConfigManagement.Shared.KeyVault.Options;
 
-public interface IKeyVaultOptions
+public sealed class KeyVaultOptions : IKeyVaultOptions
 {
-    string KeyVaultUri { get; }
+    public string Endpoint { get; init; } = default!;
 }

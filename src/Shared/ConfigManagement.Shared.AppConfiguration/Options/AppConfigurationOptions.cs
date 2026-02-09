@@ -1,6 +1,8 @@
-﻿namespace ConfigManagement.Shared.AppConfiguration.Options;
+﻿using ConfigManagement.Shared.AppConfiguration.Interfaces;
 
-public sealed class AppConfigurationOptions
+namespace ConfigManagement.Shared.AppConfiguration.Options;
+
+public sealed class AppConfigurationOptions : IAppConfigurationOptions
 {
     public string Endpoint { get; init; } = default!;
 }

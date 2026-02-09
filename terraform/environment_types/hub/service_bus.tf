@@ -2,7 +2,7 @@ module "servicebus" {
   source = "../../modules/service_bus"
 
   namespace_name      = var.servicebus_config.namespace_name
-  resource_group_name = var.servicebus_config.resource_group_name
+  resource_group_name = azurerm_resource_group.this.name
   location            = var.location
   capacity            = 0
 

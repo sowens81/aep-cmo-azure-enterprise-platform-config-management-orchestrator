@@ -9,6 +9,11 @@ variable "organisation" {
   type        = string
 }
 
+variable "tenant_id" {
+  description = "Azure Active Directory tenant ID"
+  type        = string
+}
+
 variable "hub_subscription_id" {
   description = "Subscription ID of the hub where the Service Bus namespace is provisioned"
   type        = string
@@ -81,11 +86,11 @@ variable "idempotency_table" {
 variable "servicebus_config" {
   description = "Service Bus configuration for the Function App to publish sync messages. Should include the namespace endpoint and topic/subscription names."
   type = object({
-    resource_group_name = string
-    namespace_name      = string
-    app_config_sync_topic_name     = string
-    key_vault_sync_topic_name     = string
-    result_topic_name   = string
+    resource_group_name        = string
+    namespace_name             = string
+    app_config_sync_topic_name = string
+    key_vault_sync_topic_name  = string
+    result_topic_name          = string
   })
 }
 

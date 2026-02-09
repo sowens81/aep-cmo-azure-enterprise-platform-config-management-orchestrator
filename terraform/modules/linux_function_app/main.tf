@@ -41,8 +41,8 @@ resource "azurerm_linux_function_app" "this" {
   app_settings = merge(var.app_settings, {
     FUNCTIONS_WORKER_RUNTIME  = var.worker_runtime
     WEBSITE_RUN_FROM_PACKAGE  = var.website_run_from_package ? "1" : "0"
-    STORAGE_ACCOUNT_TABLE_URI = "https://${azurerm_storage_account.this.name}.table.core.windows.net"
-    STORAGE_ACCOUNT_BLOB_URI  = "https://${azurerm_storage_account.this.name}.blob.core.windows.net"
+    StorageAccount__Table__Endpoint = "https://${azurerm_storage_account.this.name}.table.core.windows.net"
+    StorageAccount__Blob__Endpoint  = "https://${azurerm_storage_account.this.name}.blob.core.windows.net"
   })
 
   tags = var.tags

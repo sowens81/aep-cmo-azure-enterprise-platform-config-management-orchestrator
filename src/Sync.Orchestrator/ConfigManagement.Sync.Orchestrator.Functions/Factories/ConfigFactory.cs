@@ -1,5 +1,6 @@
-﻿using ConfigManagement.Shared.AppConfiguration.Authentication;
-using ConfigManagement.Shared.KeyVault.Authentication;
+﻿using ConfigManagement.Shared.AppConfiguration.Options;
+using ConfigManagement.Shared.KeyVault.Enums;
+using ConfigManagement.Shared.KeyVault.Options;
 using ConfigManagement.Shared.ServiceBus.Authentication;
 
 namespace ConfigurationSyncOrchestrator.Domain.Factories;
@@ -79,7 +80,7 @@ public sealed class ConfigFactory
 
         return new AppConfigurationAuthOptions
         {
-            AuthType = Enum.Parse<AppConfigurationAuthType>(
+            AuthType = Enum.Parse<ConfigManagement.Shared.AppConfiguration.Enums.AuthType>(
                 GetRequiredFromSection(nameof(AppConfigurationAuthOptions.AuthType)),
                 ignoreCase: true),
             TenantId = GetRequiredFromSection(nameof(AppConfigurationAuthOptions.TenantId)),
@@ -120,7 +121,7 @@ public sealed class ConfigFactory
 
         return new KeyVaultAuthOptions
         {
-            AuthType = Enum.Parse<KeyVaultAuthType>(
+            AuthType = Enum.Parse<ConfigManagement.Shared.KeyVault.Enums.AuthType>(
                 GetRequiredFromSection(nameof(KeyVaultAuthOptions.AuthType)),
                 ignoreCase: true),
             TenantId = GetRequiredFromSection(nameof(KeyVaultAuthOptions.TenantId)),

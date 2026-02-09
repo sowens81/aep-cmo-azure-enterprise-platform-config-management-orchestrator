@@ -1,21 +1,21 @@
 ﻿using Azure.Core;
 using Azure.Identity;
+using ConfigManagement.Shared.AppConfiguration.Enums;
+using ConfigManagement.Shared.AppConfiguration.Interfaces;
 using Microsoft.Extensions.Logging;
-
-namespace ConfigManagement.Shared.AppConfiguration.Authentication;
 
 public sealed class AppConfigurationCredentialFactory
     : IAppConfigurationCredentialFactory
 {
-    private readonly AppConfigurationAuthOptions _options;
+    private readonly IAppConfigurationAuthOptions _options;
     private readonly ILogger<AppConfigurationCredentialFactory> _logger;
 
     public AppConfigurationCredentialFactory(
-        AppConfigurationAuthOptions options,
+        IAppConfigurationAuthOptions options,
         ILogger<AppConfigurationCredentialFactory> logger)
     {
-        _options = options ?? throw new ArgumentNullException(nameof(options));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _options = options;
+        _logger = logger;
     }
 
     public TokenCredential CreateCredential()
@@ -28,56 +28,34 @@ public sealed class AppConfigurationCredentialFactory
 
             return _options.AuthType switch
             {
-                AppConfigurationAuthType.Default =>
-                    new DefaultAzureCredential(),
+                AuthType.Default => new DefaultAzureCredential(),
 
-                AppConfigurationAuthType.ManagedIdentity =>
-                    CreateManagedIdentityCredential(),
+                AuthType.ManagedIdentity =>
+                    string.IsNullOrWhiteSpace(_options.ManagedIdentityClientId)
+                        ? new ManagedIdentityCredential()
+                        : new ManagedIdentityCredential(_options.ManagedIdentityClientId),
 
-                AppConfigurationAuthType.ClientSecret =>
-                    CreateClientSecretCredential(),
+                AuthType.ClientSecret =>
+                    new ClientSecretCredential(
+                        _options.TenantId!,
+                        _options.ClientId!,
+                        _options.ClientSecret!),
 
-                AppConfigurationAuthType.AzureCli =>
-                    new AzureCliCredential(),
-
-                AppConfigurationAuthType.VisualStudio =>
-                    new VisualStudioCredential(),
+                AuthType.AzureCli => new AzureCliCredential(),
+                AuthType.VisualStudio => new VisualStudioCredential(),
 
                 _ => throw new NotSupportedException(
-                    $"Auth type '{_options.AuthType}' is not supported.")
+                    $"Unsupported auth type: {_options.AuthType}")
             };
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to create App Configuration credential");
-            throw;
+            _logger.LogError(
+                ex,
+                "Failed to create App Configuration credential using {AuthType}",
+                _options.AuthType);
+
+            throw; // important: preserve stack trace
         }
-    }
-
-    private TokenCredential CreateManagedIdentityCredential()
-    {
-        _logger.LogDebug("Using ManagedIdentityCredential");
-
-        return string.IsNullOrWhiteSpace(_options.ManagedIdentityClientId)
-            ? new ManagedIdentityCredential()
-            : new ManagedIdentityCredential(_options.ManagedIdentityClientId);
-    }
-
-    private TokenCredential CreateClientSecretCredential()
-    {
-        if (string.IsNullOrWhiteSpace(_options.TenantId) ||
-            string.IsNullOrWhiteSpace(_options.ClientId) ||
-            string.IsNullOrWhiteSpace(_options.ClientSecret))
-        {
-            throw new InvalidOperationException(
-                "ClientSecret authentication requires TenantId, ClientId, and ClientSecret.");
-        }
-
-        _logger.LogDebug("Using ClientSecretCredential");
-
-        return new ClientSecretCredential(
-            _options.TenantId,
-            _options.ClientId,
-            _options.ClientSecret);
     }
 }

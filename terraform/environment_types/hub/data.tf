@@ -15,7 +15,7 @@ data "azurerm_role_definition" "kv_secrets_officer" {
   scope = "/subscriptions/${data.azurerm_client_config.current.subscription_id}"
 }
 
-data "azurerm_role_definition" "kv_secrets_reader" {
+data "azurerm_role_definition" "kv_secrets_user" {
   name  = "Key Vault Secrets User"
   scope = "/subscriptions/${data.azurerm_client_config.current.subscription_id}"
 }

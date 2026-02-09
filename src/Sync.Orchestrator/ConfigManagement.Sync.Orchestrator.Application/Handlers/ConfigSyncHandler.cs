@@ -1,4 +1,4 @@
-﻿using ConfigManagement.Shared.AppConfiguration;
+﻿using ConfigManagement.Shared.AppConfiguration.Interfaces;
 using ConfigManagement.Shared.Domain;
 using ConfigManagement.Shared.Domain.Enum;
 using ConfigManagement.Shared.Domain.Models;

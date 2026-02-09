@@ -1,4 +1,6 @@
-﻿namespace ConfigManagement.Shared.AppConfiguration;
+﻿using ConfigManagement.Shared.AppConfiguration.Constants;
+
+namespace ConfigManagement.Shared.AppConfiguration.Interfaces;
 
 public interface IAppConfigurationClient
 {
@@ -11,14 +13,14 @@ public interface IAppConfigurationClient
         string key,
         string value,
         string? label = null,
-        string contentType = AppConfigurationContentTypes.PlainText,
+        string contentType = ContentTypes.PlainText,
         CancellationToken cancellationToken = default);
 
     Task<bool> AddKeyVaultReferenceConfigurationSettingAsync(
         string key,
         Uri secretUri,
         string? label = null,
-        string contentType = AppConfigurationContentTypes.KeyVaultReference,
+        string contentType = ContentTypes.KeyVaultReference,
         CancellationToken cancellationToken = default);
 
     Task SetConfigurationSettingAsync(

@@ -1,7 +1,6 @@
 ﻿using Azure;
 using Azure.Security.KeyVault.Secrets;
-using ConfigManagement.Shared.KeyVault.Authentication;
-using ConfigManagement.Shared.KeyVault.Options;
+using ConfigManagement.Shared.KeyVault.Interfaces;
 using Microsoft.Extensions.Logging;
 
 namespace ConfigManagement.Shared.KeyVault;
@@ -16,11 +15,11 @@ public abstract class KeyVaultSecretClient : IKeyVaultSecretClient
         IKeyVaultCredentialFactory credentialFactory,
         ILogger<KeyVaultSecretClient> logger)
     {
-        if (string.IsNullOrWhiteSpace(options.KeyVaultUri))
-            throw new ArgumentException("VaultUri is required.", nameof(options.KeyVaultUri));
+        if (string.IsNullOrWhiteSpace(options.Endpoint))
+            throw new ArgumentException("VaultUri is required.", nameof(options.Endpoint));
 
         _client = new SecretClient(
-            new Uri(options.KeyVaultUri),
+            new Uri(options.Endpoint),
             credentialFactory.CreateCredential());
 
         _logger = logger;

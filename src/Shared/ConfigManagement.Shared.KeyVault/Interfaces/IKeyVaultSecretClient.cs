@@ -1,4 +1,4 @@
-﻿namespace ConfigManagement.Shared.KeyVault;
+﻿namespace ConfigManagement.Shared.KeyVault.Interfaces;
 
 public interface IKeyVaultSecretClient
 {

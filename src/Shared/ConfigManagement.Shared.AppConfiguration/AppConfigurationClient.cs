@@ -1,6 +1,7 @@
 ﻿using Azure;
 using Azure.Data.AppConfiguration;
-using ConfigManagement.Shared.AppConfiguration.Authentication;
+using ConfigManagement.Shared.AppConfiguration.Constants;
+using ConfigManagement.Shared.AppConfiguration.Interfaces;
 using ConfigManagement.Shared.AppConfiguration.Options;
 using Microsoft.Extensions.Logging;
 
@@ -58,7 +59,7 @@ public sealed class AppConfigurationClient : IAppConfigurationClient
         string key,
         string value,
         string? label = null,
-        string contentType = AppConfigurationContentTypes.PlainText,
+        string contentType = ContentTypes.PlainText,
         CancellationToken cancellationToken = default)
     {
         var setting = new ConfigurationSetting(key, value, label)
@@ -95,7 +96,7 @@ public sealed class AppConfigurationClient : IAppConfigurationClient
         string key,
         Uri secretUri,
         string? label = null,
-        string contentType = AppConfigurationContentTypes.KeyVaultReference,
+        string contentType = ContentTypes.KeyVaultReference,
         CancellationToken cancellationToken = default)
     {
         var setting = CreateKeyVaultReferenceSetting(

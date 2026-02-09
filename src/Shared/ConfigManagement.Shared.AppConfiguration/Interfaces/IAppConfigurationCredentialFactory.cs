@@ -1,6 +1,6 @@
 ﻿using Azure.Core;
 
-namespace ConfigManagement.Shared.AppConfiguration.Authentication;
+namespace ConfigManagement.Shared.AppConfiguration.Interfaces;
 
 public interface IAppConfigurationCredentialFactory
 {
