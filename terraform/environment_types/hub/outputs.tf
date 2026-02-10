@@ -1,13 +1,19 @@
-output "app_configuration_id" {
-  value = module.app_configuration.id
+output "app_configuration" {
+  description = "Outputs from the App Configuration module"
+  value       = module.app_configuration
 }
 
-output "key_vault_id" {
-  value = module.key_vault.id
+output "key_vault" {
+  description = "Outputs from the Key Vault module"
+  value       = module.key_vault
 }
 
-output "servicebus_topic_ids" {
-  description = "Map of Service Bus topic names to their IDs"
-  value       = module.servicebus.topics
+output "servicebus" {
+  description = "Outputs from the Service Bus module"
+  value       = module.servicebus
 }
 
+output "entraid_group_hub_access" {
+  description = "Outputs from the Entra ID Group for Hub Access module"
+  value       = azuread_group.this
+}

@@ -15,3 +15,8 @@ data "azurerm_role_definition" "kv_secrets_user" {
   name  = "Key Vault Secrets User"
   scope = "/subscriptions/${data.azurerm_client_config.current.subscription_id}"
 }
+
+data "azuread_group" "this" {
+  object_id      = var.hub_entra_id_group
+  security_enabled = true
+}

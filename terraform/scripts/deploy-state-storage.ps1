@@ -123,7 +123,7 @@ while (-not $storageAccount -and $attempt -lt $maxAttempts) {
         $existing = az storage account show --name $saName --resource-group $ResourceGroupName --subscription $SubscriptionId --output json 2>$null | ConvertFrom-Json -ErrorAction SilentlyContinue
         if ($existing) { continue }
 
-        $saJson = az storage account create --name $saName --resource-group $ResourceGroupName --location $Region --sku Standard_LRS --kind StorageV2 --subscription $SubscriptionId --output json
+        $saJson = az storage account create --name $saName --resource-group $ResourceGroupName --location $Region --sku standard_LRS --kind StorageV2 --subscription $SubscriptionId --output json
         $storageAccount = $saJson | ConvertFrom-Json
         Write-Host "Storage account created: $saName" -ForegroundColor Green
     } catch {

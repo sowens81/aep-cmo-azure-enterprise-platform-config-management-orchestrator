@@ -3,7 +3,6 @@ using ConfigManagement.Shared.Domain;
 using ConfigManagement.Shared.Domain.Enum;
 using ConfigManagement.Shared.Domain.Models;
 using ConfigManagement.Shared.Domain.Results;
-using ConfigManagement.Shared.KeyVault;
 using ConfigManagement.Sync.Orchestrator.Application.Interfaces;
 using ConfigManagement.Sync.Orchestrator.Infrastructure.Interfaces;
 using Microsoft.Extensions.Logging;

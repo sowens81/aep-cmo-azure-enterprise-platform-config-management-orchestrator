@@ -2,7 +2,6 @@
 using Azure.Data.AppConfiguration;
 using ConfigManagement.Shared.AppConfiguration.Constants;
 using ConfigManagement.Shared.AppConfiguration.Interfaces;
-using ConfigManagement.Shared.AppConfiguration.Options;
 using Microsoft.Extensions.Logging;
 
 namespace ConfigManagement.Shared.AppConfiguration;
@@ -13,7 +12,7 @@ public sealed class AppConfigurationClient : IAppConfigurationClient
     private readonly ILogger<AppConfigurationClient> _logger;
 
     public AppConfigurationClient(
-        AppConfigurationOptions options,
+        IAppConfigurationOptions options,
         IAppConfigurationCredentialFactory credentialFactory,
         ILogger<AppConfigurationClient> logger)
     {

@@ -28,10 +28,9 @@ public sealed class ConfigSyncFunction
     [Function(nameof(ConfigSyncFunction))]
     public async Task RunAsync(
         [ServiceBusTrigger(
-            "%SBUS_EVENT_TOPIC%",
-            "%SBUS_EVENT_TOPIC_SUBSCRIPTION%",
-            Connection = "ServiceBus__FullyQualifiedNamespace"
-        )]
+        "%SBUS_APP_CONFIG_TOPIC%",
+        "%SBUS_APP_CONFIG_SUBSCRIPTION%",
+        Connection = "ServiceBusConnection")]
             EventMessage<ConfigSyncMessage> message,
         CancellationToken ct
     )

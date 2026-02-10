@@ -90,9 +90,9 @@ variable "servicebus_config" {
   description = "Service Bus configuration for the Function App to publish sync messages. Should include the namespace endpoint and topic/subscription names."
   type = object({
     namespace_name              = string
-    app_config_sync_topic_name             = string
+    app_config_sync_topic_name  = string
     app_config_event_topic_name = string
-    key_vault_sync_topic_name             = string
+    key_vault_sync_topic_name   = string
     key_vault_event_topic_name  = string
     result_topic_name           = string
   })

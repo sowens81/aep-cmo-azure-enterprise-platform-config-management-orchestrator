@@ -27,11 +27,6 @@ resource "azurerm_role_assignment" "mi_kv_secrets_officer" {
   name               = random_uuid.mi_role_kv.result
 }
 
-data "azuread_group" "this" {
-  display_name     = "so-demo-spoke-config-management-consumers"
-  security_enabled = true
-}
-
 resource "azuread_group_member" "this" {
   group_object_id  = data.azuread_group.this.object_id
   member_object_id = module.function.identity_principal_id

@@ -1,7 +1,7 @@
 ﻿using ConfigManagement.Shared.ServiceBus;
-using ConfigManagement.Shared.ServiceBus.Authentication;
 using ConfigManagement.Shared.ServiceBus.Interfaces;
 using ConfigManagement.Shared.ServiceBus.Models;
+using ConfigManagement.Sync.Orchestrator.Infrastructure.Interfaces;
 using Microsoft.Extensions.Logging;
 
 namespace ConfigManagement.Sync.Orchestrator.Infrastructure.ServiceBus;
@@ -10,12 +10,12 @@ public sealed class ResultTopicPublisher<TPayload>
     : TopicPublisher<ResultMessage<TPayload>, TPayload>
 {
     public ResultTopicPublisher(
-        string topicName,
+        IResultServiceBusTopicOptions topic,
         IServiceBusOptions options,
-        ServiceBusCredentialFactory credentialFactory,
+        IServiceBusCredentialFactory credentialFactory,
         ILogger<TopicPublisher<ResultMessage<TPayload>, TPayload>> logger)
         : base(
-            topicName: topicName,
+            topic: topic,
             options,
             credentialFactory,
             logger)

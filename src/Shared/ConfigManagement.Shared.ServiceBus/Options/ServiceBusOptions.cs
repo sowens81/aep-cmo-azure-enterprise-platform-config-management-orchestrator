@@ -1,6 +1,8 @@
-﻿namespace ConfigManagement.Shared.ServiceBus.Options;
+﻿using ConfigManagement.Shared.ServiceBus.Interfaces;
 
-public class ServiceBusOptions
+namespace ConfigManagement.Shared.ServiceBus.Options;
+
+public class ServiceBusOptions : IServiceBusOptions
 {
     public string Endpoint { get; init; } = default!;
 }

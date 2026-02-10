@@ -2,7 +2,8 @@
 # Global
 # ============================
 
-environment  = "dev"
+environment_tier = "production"
+environment  = "prod"
 organisation = "xxuk"
 
 # ============================
@@ -10,41 +11,42 @@ organisation = "xxuk"
 # ============================
 
 hub_subscription_id         = "00000000-0000-0000-0000-000000000000"
-environment_subscription_id = "11111111-1111-1111-1111-111111111111"
+environment_subscription_id = "00000000-0000-0000-0000-000000000000"
+tenant_id                   = "00000000-0000-0000-0000-000000000000"
 
 # ============================
 # Resource Group / Location
 # ============================
 
-resource_group_name = "xxuk-dev-uks-rg-configmgmt"
+resource_group_name = "xxuk-prod-uks-rg-configmgmt"
 location            = "uksouth"
 
 # ============================
 # Function App
 # ============================
 
-function_name = "xxuk-dev-uks-func-configmgmt"
-identity_name = "xxuk-dev-uks-mi-configmgmt"
+function_name = "xxuk-prod-uks-func-configmgmt"
+identity_name = "xxuk-prod-uks-mi-configmgmt"
 
-storage_account_name = "stconfigsyncdevuks"
+storage_account_name = "stconfigsyncproduks"
 
 # ============================
 # App Configuration / Key Vault
 # ============================
 
-app_configuration_name = "apcfgconfigsyncdevuks"
-key_vault_name         = "kvconfigsyncdevuks"
+app_configuration_name = "apcfgconfigproduks"
+key_vault_name         = "kvconfigproduks"
 
-app_configuration_sku = "Standard"
+app_configuration_sku = "standard"
 
 # ============================
 # Tags
 # ============================
 
 tags = {
-  environment = "dev"
+  environment = "prod"
   workload    = "config-sync"
-  owner       = "Steve Owens"
+  owner       = "First Name Surname"
   type        = "proof of concept"
   region      = "uksouth"
 
@@ -54,9 +56,9 @@ tags = {
 # Entra ID / Hub Access
 # ============================
 
-hub_entra_id_group = "22222222-2222-2222-2222-222222222222"
+hub_entra_id_group = "00000000-0000-0000-0000-000000000000"
 
-hub_key_vault_uri = "https://kv-hub-shared.vault.azure.net/"
+hub_key_vault_uri = "https://kvconfigsyncprdhubuks.vault.azure.net/"
 
 # ============================
 # Idempotency
@@ -73,5 +75,5 @@ servicebus_config = {
   namespace_name             = "xxuk-prdhub-uks-sbus-configmgmt"
   app_config_sync_topic_name = "app-config-sync"
   key_vault_sync_topic_name  = "key-vault-sync"
-  result_topic_name          = "app-config-sync-telemetry"
+  result_topic_name          = "app-config-result-telemetry"
 }

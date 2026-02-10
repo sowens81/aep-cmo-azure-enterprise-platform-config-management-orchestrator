@@ -1,14 +1,12 @@
 # ============================
 # Global
 # ============================
-
-environment  = "dev"
+environment  = "prdhub"
 organisation = "xxuk"
 
 # ============================
 # Subscriptions
 # ============================
-
 hub_subscription_id         = "00000000-0000-0000-0000-000000000000"
 environment_subscription_id = "00000000-0000-0000-0000-000000000000"
 tenant_id                   = "00000000-0000-0000-0000-000000000000"
@@ -61,12 +59,12 @@ idempotency_table = "configSyncIdempotency"
 
 servicebus_config = {
   namespace_name              = "xxuk-prdhub-uks-sbus-configmgmt"
-  app_config_sync_topic_name             = "app-config-sync"
+  app_config_sync_topic_name  = "app-config-sync"
+  key_vault_sync_topic_name   = "key-vault-sync"
   app_config_event_topic_name = "app-config-event"
   key_vault_event_topic_name  = "key-vault-event"
-  key_vault_sync_topic_name             = "key-vault-sync"
-  result_topic_name           = "app-config-result-telemetry"
+  result_topic_name           = "cfg-mgmt-result-telemetry"
 }
 
+entraid_spoke_access_group_name = "demo-spoke-config-management-consumers-entraid-group"
 
-entraid_spoke_access_group_name = "so-demo-spoke-config-management-consumers-entraid-group"

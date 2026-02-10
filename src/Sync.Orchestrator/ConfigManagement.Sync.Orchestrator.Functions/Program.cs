@@ -5,6 +5,7 @@ using ConfigManagement.Shared.Domain.Models;
 using ConfigManagement.Shared.KeyVault.Authentication;
 using ConfigManagement.Shared.KeyVault.Interfaces;
 using ConfigManagement.Shared.KeyVault.Options;
+using ConfigManagement.Shared.ServiceBus.Authentication;
 using ConfigManagement.Shared.ServiceBus.Enums;
 using ConfigManagement.Shared.ServiceBus.Interfaces;
 using ConfigManagement.Shared.ServiceBus.Models;
@@ -31,9 +32,8 @@ using ServiceBusAuthType = ConfigManagement.Shared.ServiceBus.Enums.AuthType;
 var builder = FunctionsApplication.CreateBuilder(args);
 
 builder.ConfigureFunctionsWebApplication();
-
-builder
-    .Services.AddApplicationInsightsTelemetryWorkerService()
+builder.Services
+    .AddApplicationInsightsTelemetryWorkerService()
     .ConfigureFunctionsApplicationInsights();
 
 builder.Services
@@ -61,6 +61,26 @@ builder.Services.AddSingleton<IServiceMetadata>(sp =>
 // -------------------------------------------------
 
 builder.Services
+    .AddOptions<ResultServiceBusTopicOptions>()
+    .Bind(builder.Configuration.GetSection("ServiceBus:Topics:ResultTelemetry"))
+    .Validate(o => !string.IsNullOrWhiteSpace(o.TopicName),
+        "Service Bus Result Topic Name is missing")
+    .ValidateOnStart();
+
+builder.Services.AddSingleton<IResultServiceBusTopicOptions>(sp =>
+    sp.GetRequiredService<IOptions<ResultServiceBusTopicOptions>>().Value);
+
+builder.Services
+    .AddOptions<ServiceBusOptions>()
+    .Bind(builder.Configuration.GetSection("ServiceBus"))
+    .Validate(o => !string.IsNullOrWhiteSpace(o.Endpoint),
+        "Service Bus Endpoint is missing")
+    .ValidateOnStart();
+
+builder.Services.AddSingleton<IServiceBusOptions>(sp =>
+    sp.GetRequiredService<IOptions<ServiceBusOptions>>().Value);
+
+builder.Services
     .AddOptions<ServiceBusAuthOptions>()
     .Bind(builder.Configuration.GetSection("ServiceBus:Auth"))
     .Validate(o => o.AuthType switch
@@ -83,9 +103,8 @@ builder.Services.AddSingleton<IServiceBusAuthOptions>(sp =>
     sp.GetRequiredService<IOptions<ServiceBusAuthOptions>>().Value);
 
 builder
-    .Services.AddSingleton<
-    ITopicPublisher<EventMessage<ConfigSyncMessage>>,
-    EventTopicPublisher<ConfigSyncMessage>>();
+    .Services.AddSingleton<IServiceBusCredentialFactory, ServiceBusCredentialFactory>();
+
 
 builder
     .Services.AddSingleton<
@@ -96,6 +115,17 @@ builder
 // -------------------------------------------------
 // App Configuration
 // -------------------------------------------------
+
+builder.Services
+    .AddOptions<AppConfigurationOptions>()
+    .Bind(builder.Configuration.GetSection("AppConfiguration"))
+    .Validate(o => !string.IsNullOrWhiteSpace(o.Endpoint),
+        "App Configuration Endpoint is missing")
+    .ValidateOnStart();
+
+builder.Services.AddSingleton<IAppConfigurationOptions>(sp =>
+    sp.GetRequiredService<IOptions<AppConfigurationOptions>>().Value);
+
 builder.Services
     .AddOptions<AppConfigurationAuthOptions>()
     .Bind(builder.Configuration.GetSection("AppConfiguration:Auth"))
@@ -140,7 +170,6 @@ builder.Services
         "Hub KeyVault Endpoint is missing")
     .ValidateOnStart();
 
-// Expose via interfaces (validated at startup)
 builder.Services.AddSingleton<IHubKeyVaultOptions>(sp =>
     sp.GetRequiredService<IOptions<HubKeyVaultOptions>>().Value);
 
@@ -158,13 +187,6 @@ builder.Services
         "ClientSecret auth requires TenantId, ClientId, and ClientSecret")
     .ValidateOnStart();
 
-
-builder.Services.AddSingleton<ILocalKeyVaultOptions>(sp =>
-    sp.GetRequiredService<IOptions<LocalKeyVaultOptions>>().Value);
-
-builder.Services.AddSingleton<IHubKeyVaultOptions>(sp =>
-    sp.GetRequiredService<IOptions<HubKeyVaultOptions>>().Value);
-
 builder.Services.AddSingleton<IKeyVaultAuthOptions>(sp =>
     sp.GetRequiredService<IOptions<KeyVaultAuthOptions>>().Value);
 
@@ -177,15 +199,8 @@ builder.Services.AddScoped<IHubKeyVaultSecretClient, HubKeyVaultSecretClient>();
 // -------------------------------------------------
 // Application layer
 // -------------------------------------------------
-builder.Services.AddSingleton<IConfigSyncHandler, ConfigSyncHandler>();
+builder.Services.AddScoped<IConfigSyncHandler, ConfigSyncHandler>();
 
-//builder.Services.AddSingleton<IServiceMetadata>(sp =>
-//{
-//    var config = sp.GetRequiredService<ConfigFactory>();
-//    return new ConfigFactoryServiceMetadata(config);
-//});
-
-builder.Services.AddSingleton<IResultOrchestrator, ResultOrchestrator>();
-
+builder.Services.AddScoped<IResultOrchestrator, ResultOrchestrator>();
 
 builder.Build().Run();

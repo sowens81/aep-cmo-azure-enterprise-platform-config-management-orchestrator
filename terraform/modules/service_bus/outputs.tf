@@ -8,6 +8,12 @@ output "namespace_name" {
   value       = azurerm_servicebus_namespace.this.name
 }
 
+output "endpoint" {
+  description = "The endpoint of the Service Bus namespace"
+  value       = azurerm_servicebus_namespace.this.endpoint
+  
+}
+
 output "topics" {
   description = "Map of topics created (name => id)"
   value       = { for k, v in azurerm_servicebus_topic.this : k => v.id }

@@ -6,6 +6,24 @@ module "function" {
   identity_name        = var.identity_name
   storage_account_name = var.storage_account_name
   app_settings = {
+
+     # -------------------------------------------------
+    # Service Bus trigger bindings (FLAT KEYS REQUIRED)
+    # -------------------------------------------------
+    ServiceBusConnection     = "Endpoint=sb://${var.servicebus_config.namespace_name}.servicebus.windows.net/"
+    SBUS_APP_CONFIG_TOPIC         = var.servicebus_config.app_config_sync_topic_name
+    SBUS_APP_CONFIG_SUBSCRIPTION  = module.servicebus_subscription_app_config_sync.subscription_name
+    SBUS_KEY_VAULT_TOPIC          = var.servicebus_config.key_vault_sync_topic_name
+    SBUS_KEY_VAULT_SUBSCRIPTION   = module.servicebus_subscription_key_vault_sync.subscription_name
+
+    # -------------------------------------------------
+    # Environment Context configuration
+    # -------------------------------------------------
+    Organisation     = var.organisation
+    Region           = var.location
+    EnvironmentTier  = var.environment_tier
+    EnvironmentName  = var.environment
+    ServiceName      = "config-sync-orchestrator"
     
     # -----------------------------
     # Key Vault configuration
@@ -23,7 +41,7 @@ module "function" {
     # -----------------------------
     # Service Bus configuration
     # -----------------------------
-    "ServiceBus__Endpoint"                             = "https://${var.servicebus_config.namespace_name}.servicebus.windows.net"
+    "ServiceBus__Endpoint"                             = "${var.servicebus_config.namespace_name}.servicebus.windows.net"
     "ServiceBus__Auth__AuthType"                     = "ManagedIdentity"
     "ServiceBus__Topics__KeyVaultSync__TopicName"      = "key-vault-Sync"
     "ServiceBus__Topics__KeyVaultSync__SubscriptionName" = "${module.servicebus_subscription_key_vault_sync.subscription_name}"

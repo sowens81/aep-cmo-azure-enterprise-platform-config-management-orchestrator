@@ -1,10 +1,7 @@
-﻿using Azure.Core;
-using Azure.Messaging.ServiceBus;
-using ConfigManagement.Shared.ServiceBus.Authentication;
+﻿using Azure.Messaging.ServiceBus;
 using ConfigManagement.Shared.ServiceBus.Interfaces;
 using ConfigManagement.Shared.ServiceBus.Models;
 using Microsoft.Extensions.Logging;
-using System.Text.Json;
 
 namespace ConfigManagement.Shared.ServiceBus;
 
@@ -16,13 +13,13 @@ public class TopicPublisher<TMessage, TPayload>
     private readonly ILogger<TopicPublisher<TMessage, TPayload>> _logger;
 
     protected TopicPublisher(
-    string topicName,
+    IServiceBusTopicOptions topic,
     IServiceBusOptions options,
-    ServiceBusCredentialFactory credentialFactory,
+    IServiceBusCredentialFactory credentialFactory,
     ILogger<TopicPublisher<TMessage, TPayload>> logger)
     {
-        if (string.IsNullOrWhiteSpace(topicName))
-            throw new ArgumentException("Topic name is required.", nameof(topicName));
+        if (string.IsNullOrWhiteSpace(topic.TopicName))
+            throw new ArgumentException("Topic name is required.", nameof(topic.TopicName));
 
         if (string.IsNullOrWhiteSpace(options.Endpoint))
             throw new ArgumentException("Endpoint is required.", nameof(options.Endpoint));
@@ -37,7 +34,7 @@ public class TopicPublisher<TMessage, TPayload>
             credentialFactory.CreateCredential());
 
         // Then create a sender for the topic
-        _sender = client.CreateSender(topicName);
+        _sender = client.CreateSender(topic.TopicName);
     }
 
     public async Task PublishAsync(

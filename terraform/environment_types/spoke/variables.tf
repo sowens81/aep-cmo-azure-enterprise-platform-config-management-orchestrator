@@ -4,6 +4,11 @@ variable "environment" {
 
 }
 
+variable "environment_tier" {
+  description = "Environment tier (e.g. devtest, production)"
+  type        = string
+}
+
 variable "organisation" {
   description = "Name of the organisation (xxxx, xxyy)"
   type        = string
@@ -61,9 +66,9 @@ variable "key_vault_name" {
 }
 
 variable "app_configuration_sku" {
-  description = "SKU for App Configuration (Free|Standard)"
+  description = "SKU for App Configuration (Free|standard)"
   type        = string
-  default     = "Standard"
+  default     = "standard"
 }
 
 variable "tags" {
