@@ -15,8 +15,8 @@ variable "location" {
 
 variable "sku" {
   type        = string
-  description = "SKU for the Service Bus namespace (Basic | standard | Premium)"
-  default     = "standard"
+  description = "SKU for the Service Bus namespace (Basic | Standard | Premium)"
+  default     = "Standard"
 }
 
 variable "capacity" {
