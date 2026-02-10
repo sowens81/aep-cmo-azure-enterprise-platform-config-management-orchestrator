@@ -56,7 +56,7 @@ tags = {
 # Entra ID / Hub Access
 # ============================
 
-hub_entra_id_group = "00000000-0000-0000-0000-000000000000"
+hub_entra_id_group = "demo-spoke-config-management-consumers-entraid-group"
 
 hub_key_vault_uri = "https://kvconfigsyncprdhubuks.vault.azure.net/"
 

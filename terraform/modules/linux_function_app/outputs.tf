@@ -1,11 +1,11 @@
 output "function_app_id" {
   description = "ID of the Function App"
-  value       = azurerm_linux_function_app.this.id
+  value       = azurerm_function_app_flex_consumption.this.id
 }
 
 output "function_app_default_hostname" {
   description = "Default hostname for the Function App"
-  value       = azurerm_linux_function_app.this.default_hostname
+  value       = azurerm_function_app_flex_consumption.this.default_hostname
 }
 
 output "identity_id" {

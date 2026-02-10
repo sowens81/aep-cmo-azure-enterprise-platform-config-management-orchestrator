@@ -17,6 +17,6 @@ data "azurerm_role_definition" "kv_secrets_user" {
 }
 
 data "azuread_group" "this" {
-  object_id      = var.hub_entra_id_group
+  display_name      = var.hub_entra_id_group
   security_enabled = true
 }
