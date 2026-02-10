@@ -1,7 +1,7 @@
 ﻿using ConfigManagement.Shared.Domain;
 using ConfigManagement.Shared.Domain.Models;
 using ConfigManagement.Shared.Domain.Results;
-using ConfigManagement.Shared.ServiceBus;
+using ConfigManagement.Shared.ServiceBus.Interfaces;
 using ConfigManagement.Shared.ServiceBus.Models;
 using ConfigManagement.Sync.Orchestrator.Application.Interfaces;
 using Microsoft.Extensions.Logging;
@@ -9,19 +9,19 @@ using System.Diagnostics;
 
 namespace ConfigManagement.Sync.Orchestrator.Application.Orchestration;
 
-public sealed class SyncResultOrchestrator : ISyncResultOrchestrator
+public sealed class ResultOrchestrator : IResultOrchestrator
 {
     private const string SuccessStatus = "SUCCESS";
     private const string FailedStatus = "FAILED";
 
-    private readonly IResultPublisher _resultPublisher;
+    private readonly ITopicPublisher<ResultMessage<ConfigSyncMessage>> _resultPublisher;
     private readonly IServiceMetadata _serviceMetadata;
-    private readonly ILogger<SyncResultOrchestrator> _logger;
+    private readonly ILogger<ResultOrchestrator> _logger;
 
-    public SyncResultOrchestrator(
-        IResultPublisher resultPublisher,
+    public ResultOrchestrator(
+        ITopicPublisher<ResultMessage<ConfigSyncMessage>> resultPublisher,
         IServiceMetadata serviceMetadata,
-        ILogger<SyncResultOrchestrator> logger
+        ILogger<ResultOrchestrator> logger
     )
     {
         _resultPublisher = resultPublisher;

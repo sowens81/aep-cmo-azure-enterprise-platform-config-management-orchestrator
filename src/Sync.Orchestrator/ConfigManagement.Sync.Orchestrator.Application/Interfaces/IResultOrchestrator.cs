@@ -5,7 +5,7 @@ using ConfigManagement.Shared.ServiceBus.Models;
 
 namespace ConfigManagement.Sync.Orchestrator.Application.Orchestration;
 
-public interface ISyncResultOrchestrator
+public interface IResultOrchestrator
 {
     Task HandleResultAsync(
         EventMessage<ConfigSyncMessage> sourceMessage,

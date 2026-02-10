@@ -1,9 +1,14 @@
 using ConfigManagement.Shared.AppConfiguration;
 using ConfigManagement.Shared.AppConfiguration.Interfaces;
 using ConfigManagement.Shared.AppConfiguration.Options;
+using ConfigManagement.Shared.Domain.Models;
 using ConfigManagement.Shared.KeyVault.Authentication;
 using ConfigManagement.Shared.KeyVault.Interfaces;
 using ConfigManagement.Shared.KeyVault.Options;
+using ConfigManagement.Shared.ServiceBus.Enums;
+using ConfigManagement.Shared.ServiceBus.Interfaces;
+using ConfigManagement.Shared.ServiceBus.Models;
+using ConfigManagement.Shared.ServiceBus.Options;
 using ConfigManagement.Sync.Orchestrator.Application;
 using ConfigManagement.Sync.Orchestrator.Application.Context;
 using ConfigManagement.Sync.Orchestrator.Application.Interfaces;
@@ -12,6 +17,7 @@ using ConfigManagement.Sync.Orchestrator.Application.Orchestration;
 using ConfigManagement.Sync.Orchestrator.Infrastructure.Interfaces;
 using ConfigManagement.Sync.Orchestrator.Infrastructure.KeyVault;
 using ConfigManagement.Sync.Orchestrator.Infrastructure.Options;
+using ConfigManagement.Sync.Orchestrator.Infrastructure.ServiceBus;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Builder;
 using Microsoft.Extensions.Configuration;
@@ -20,6 +26,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using AppCfgAuthType = ConfigManagement.Shared.AppConfiguration.Enums.AuthType;
 using KeyVaultAuthType = ConfigManagement.Shared.KeyVault.Enums.AuthType;
+using ServiceBusAuthType = ConfigManagement.Shared.ServiceBus.Enums.AuthType;
 
 var builder = FunctionsApplication.CreateBuilder(args);
 
@@ -49,25 +56,42 @@ builder.Services.AddSingleton<IServiceMetadata>(sp =>
 });
 
 
-//// -------------------------------------------------
-//// Service Bus (Result publishing)
-//// -------------------------------------------------
-//builder.Services.AddSingleton<IServiceBusCredentialFactory>(sp =>
-//{
-//    var config = sp.GetRequiredService<ConfigFactory>();
-//    var logger = sp.GetRequiredService<ILogger<ServiceBusCredentialFactory>>();
-//    var options = config.ServiceBusOptions;
-//    return new ServiceBusCredentialFactory(options, logger);
-//});
+// -------------------------------------------------
+// Service Bus (Result publishing)
+// -------------------------------------------------
 
-//builder.Services.AddSingleton<IResultPublisher>(sp =>
-//{
-//    var config = sp.GetRequiredService<ConfigFactory>();
-//    var logger = sp.GetRequiredService<ILogger<ResultTopicPublisher>>();
-//    var factory = sp.GetRequiredService<ServiceBusCredentialFactory>();
+builder.Services
+    .AddOptions<ServiceBusAuthOptions>()
+    .Bind(builder.Configuration.GetSection("ServiceBus:Auth"))
+    .Validate(o => o.AuthType switch
+    {
+        AuthType.ClientSecret =>
+            !string.IsNullOrWhiteSpace(o.TenantId) &&
+            !string.IsNullOrWhiteSpace(o.ClientId) &&
+            !string.IsNullOrWhiteSpace(o.ClientSecret),
 
-//    return new ResultTopicPublisher(config.ServiceBusEventResultTopic, factory, logger);
-//});
+        ServiceBusAuthType.ManagedIdentity => true,
+        ServiceBusAuthType.Default => true,
+        ServiceBusAuthType.AzureCli => true,
+        ServiceBusAuthType.VisualStudio => true,
+
+        _ => false
+    }, "Invalid App Configuration authentication configuration")
+    .ValidateOnStart();
+
+builder.Services.AddSingleton<IServiceBusAuthOptions>(sp =>
+    sp.GetRequiredService<IOptions<ServiceBusAuthOptions>>().Value);
+
+builder
+    .Services.AddSingleton<
+    ITopicPublisher<EventMessage<ConfigSyncMessage>>,
+    EventTopicPublisher<ConfigSyncMessage>>();
+
+builder
+    .Services.AddSingleton<
+    ITopicPublisher<ResultMessage<ConfigSyncMessage>>,
+    ResultTopicPublisher<ConfigSyncMessage>>();
+
 
 // -------------------------------------------------
 // App Configuration
@@ -161,7 +185,7 @@ builder.Services.AddSingleton<IConfigSyncHandler, ConfigSyncHandler>();
 //    return new ConfigFactoryServiceMetadata(config);
 //});
 
-builder.Services.AddSingleton<ISyncResultOrchestrator, SyncResultOrchestrator>();
+builder.Services.AddSingleton<IResultOrchestrator, ResultOrchestrator>();
 
 
 builder.Build().Run();

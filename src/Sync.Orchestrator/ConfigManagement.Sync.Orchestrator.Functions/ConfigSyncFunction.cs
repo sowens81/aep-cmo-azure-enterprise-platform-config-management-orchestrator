@@ -1,29 +1,25 @@
-using System.Diagnostics;
 using ConfigManagement.Shared.Domain.Models;
 using ConfigManagement.Shared.ServiceBus.Models;
 using ConfigManagement.Sync.Orchestrator.Application.Interfaces;
 using ConfigManagement.Sync.Orchestrator.Application.Orchestration;
-using ConfigurationSyncOrchestrator.Domain.Factories;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 
 namespace ConfigManagement.Sync.Orchestrator.Functions;
 
 public sealed class ConfigSyncFunction
 {
-    private readonly ConfigFactory _config;
     private readonly IConfigSyncHandler _handler;
-    private readonly ISyncResultOrchestrator _resultOrchestrator;
+    private readonly IResultOrchestrator _resultOrchestrator;
     private readonly ILogger<ConfigSyncFunction> _logger;
 
     public ConfigSyncFunction(
-        ConfigFactory config,
         IConfigSyncHandler handler,
-        ISyncResultOrchestrator resultOrchestrator,
+        IResultOrchestrator resultOrchestrator,
         ILogger<ConfigSyncFunction> logger
     )
     {
-        _config = config;
         _handler = handler;
         _resultOrchestrator = resultOrchestrator;
         _logger = logger;

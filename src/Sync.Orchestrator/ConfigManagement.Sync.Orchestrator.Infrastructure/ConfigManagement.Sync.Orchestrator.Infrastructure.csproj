@@ -11,13 +11,13 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Shared\ConfigManagement.Shared.KeyVault\ConfigManagement.Shared.KeyVault.csproj" />
+    <ProjectReference Include="..\..\Shared\ConfigManagement.Shared.ServiceBus\ConfigManagement.Shared.ServiceBus.csproj" />
     <ProjectReference Include="..\ConfigManagement.Sync.Orchestrator.Domain\ConfigManagement.Sync.Orchestrator.Domain.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="Configuration\" />
     <Folder Include="Idempotency\" />
-    <Folder Include="ServiceBus\" />
   </ItemGroup>
 
   <PropertyGroup>
