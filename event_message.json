@@ -1,0 +1,11 @@
+{
+    "EventGridId": "123e4567-e89b-12d3-a456-426614174000",
+    "CorrelationId": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+    "TraceId": "4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7",
+    "Payload": {
+        "Key": "app/settings/featureX",
+        "Type": "KeyVaultReference",
+        "SyncAction": "Upsert"
+    },
+    "TimestampUtc": "2026-02-12T12:00:00Z"
+}

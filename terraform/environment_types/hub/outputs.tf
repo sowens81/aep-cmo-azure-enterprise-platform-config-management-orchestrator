@@ -1,3 +1,7 @@
+# output "function_app" {
+#   value = module.function
+# }
+
 output "app_configuration" {
   description = "Outputs from the App Configuration module"
   value       = module.app_configuration

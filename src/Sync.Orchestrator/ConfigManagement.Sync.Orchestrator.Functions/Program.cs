@@ -1,15 +1,10 @@
+using Azure.Monitor.OpenTelemetry.Exporter;
 using ConfigManagement.Shared.AppConfiguration;
 using ConfigManagement.Shared.AppConfiguration.Interfaces;
 using ConfigManagement.Shared.AppConfiguration.Options;
-using ConfigManagement.Shared.Domain.Models;
 using ConfigManagement.Shared.KeyVault.Authentication;
 using ConfigManagement.Shared.KeyVault.Interfaces;
 using ConfigManagement.Shared.KeyVault.Options;
-using ConfigManagement.Shared.ServiceBus.Authentication;
-using ConfigManagement.Shared.ServiceBus.Enums;
-using ConfigManagement.Shared.ServiceBus.Interfaces;
-using ConfigManagement.Shared.ServiceBus.Models;
-using ConfigManagement.Shared.ServiceBus.Options;
 using ConfigManagement.Sync.Orchestrator.Application;
 using ConfigManagement.Sync.Orchestrator.Application.Context;
 using ConfigManagement.Sync.Orchestrator.Application.Interfaces;
@@ -18,99 +13,53 @@ using ConfigManagement.Sync.Orchestrator.Application.Orchestration;
 using ConfigManagement.Sync.Orchestrator.Infrastructure.Interfaces;
 using ConfigManagement.Sync.Orchestrator.Infrastructure.KeyVault;
 using ConfigManagement.Sync.Orchestrator.Infrastructure.Options;
-using ConfigManagement.Sync.Orchestrator.Infrastructure.ServiceBus;
-using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using AppCfgAuthType = ConfigManagement.Shared.AppConfiguration.Enums.AuthType;
 using KeyVaultAuthType = ConfigManagement.Shared.KeyVault.Enums.AuthType;
-using ServiceBusAuthType = ConfigManagement.Shared.ServiceBus.Enums.AuthType;
 
+/// <summary>
+/// Configures the Config Management Sync Orchestrator Azure Function,
+/// including distributed tracing via OpenTelemetry.
+/// </summary>
 var builder = FunctionsApplication.CreateBuilder(args);
 
 builder.ConfigureFunctionsWebApplication();
-builder.Services
-    .AddApplicationInsightsTelemetryWorkerService()
-    .ConfigureFunctionsApplicationInsights();
-
-builder.Services
-    .AddOptions<ServiceMetaDataOptions>()
-    .Bind(builder.Configuration)
-    .Validate(o =>
-        !string.IsNullOrWhiteSpace(o.Organisation) &&
-        !string.IsNullOrWhiteSpace(o.Region) &&
-        !string.IsNullOrWhiteSpace(o.EnvironmentTier) &&
-        !string.IsNullOrWhiteSpace(o.EnvironmentName) &&
-        !string.IsNullOrWhiteSpace(o.ServiceName),
-        "Environment context configuration is invalid")
-    .ValidateOnStart();
-
-builder.Services.AddSingleton<IServiceMetadata>(sp =>
-{
-    var options = sp.GetRequiredService<IOptions<ServiceMetaDataOptions>>().Value;
-
-    return new ServiceMetadataContext(options);
-});
 
 
 // -------------------------------------------------
-// Service Bus (Result publishing)
+// Service Metadata
 // -------------------------------------------------
 
-builder.Services
-    .AddOptions<ResultServiceBusTopicOptions>()
-    .Bind(builder.Configuration.GetSection("ServiceBus:Topics:ResultTelemetry"))
-    .Validate(o => !string.IsNullOrWhiteSpace(o.TopicName),
-        "Service Bus Result Topic Name is missing")
-    .ValidateOnStart();
+var metadata = builder.Configuration
+    .Get<ServiceMetaDataOptions>()
+    ?? throw new InvalidOperationException("Service metadata missing.");
 
-builder.Services.AddSingleton<IResultServiceBusTopicOptions>(sp =>
-    sp.GetRequiredService<IOptions<ResultServiceBusTopicOptions>>().Value);
+var metadataContext = new ServiceMetadataContext(metadata);
 
-builder.Services
-    .AddOptions<ServiceBusOptions>()
-    .Bind(builder.Configuration.GetSection("ServiceBus"))
-    .Validate(o => !string.IsNullOrWhiteSpace(o.Endpoint),
-        "Service Bus Endpoint is missing")
-    .ValidateOnStart();
+// -------------------------------------------------
+// OpenTelemetry Configuration
+// -------------------------------------------------
 
-builder.Services.AddSingleton<IServiceBusOptions>(sp =>
-    sp.GetRequiredService<IOptions<ServiceBusOptions>>().Value);
-
-builder.Services
-    .AddOptions<ServiceBusAuthOptions>()
-    .Bind(builder.Configuration.GetSection("ServiceBus:Auth"))
-    .Validate(o => o.AuthType switch
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing =>
     {
-        AuthType.ClientSecret =>
-            !string.IsNullOrWhiteSpace(o.TenantId) &&
-            !string.IsNullOrWhiteSpace(o.ClientId) &&
-            !string.IsNullOrWhiteSpace(o.ClientSecret),
-
-        ServiceBusAuthType.ManagedIdentity => true,
-        ServiceBusAuthType.Default => true,
-        ServiceBusAuthType.AzureCli => true,
-        ServiceBusAuthType.VisualStudio => true,
-
-        _ => false
-    }, "Invalid App Configuration authentication configuration")
-    .ValidateOnStart();
-
-builder.Services.AddSingleton<IServiceBusAuthOptions>(sp =>
-    sp.GetRequiredService<IOptions<ServiceBusAuthOptions>>().Value);
-
-builder
-    .Services.AddSingleton<IServiceBusCredentialFactory, ServiceBusCredentialFactory>();
-
-
-builder
-    .Services.AddSingleton<
-    ITopicPublisher<ResultMessage<ConfigSyncMessage>>,
-    ResultTopicPublisher<ConfigSyncMessage>>();
-
+        tracing
+            .SetResourceBuilder(
+                ResourceBuilder.CreateDefault()
+                    .AddService(metadataContext.ServiceName)
+                    .AddAttributes(metadataContext.ToResourceAttributes()))
+            .AddSource("ConfigManagement.Shared.ServiceBus")
+            .AddSource("ConfigManagement.Shared.KeyVault")
+            .AddSource("ConfigManagement.Shared.AppConfiguration")
+            .AddHttpClientInstrumentation()
+            .AddAzureMonitorTraceExporter();
+    });
 
 // -------------------------------------------------
 // App Configuration
@@ -135,12 +84,10 @@ builder.Services
             !string.IsNullOrWhiteSpace(o.TenantId) &&
             !string.IsNullOrWhiteSpace(o.ClientId) &&
             !string.IsNullOrWhiteSpace(o.ClientSecret),
-
         AppCfgAuthType.ManagedIdentity => true,
         AppCfgAuthType.Default => true,
         AppCfgAuthType.AzureCli => true,
         AppCfgAuthType.VisualStudio => true,
-
         _ => false
     }, "Invalid App Configuration authentication configuration")
     .ValidateOnStart();
@@ -149,13 +96,13 @@ builder.Services.AddSingleton<IAppConfigurationAuthOptions>(sp =>
     sp.GetRequiredService<IOptions<AppConfigurationAuthOptions>>().Value);
 
 builder.Services.AddSingleton<IAppConfigurationCredentialFactory, AppConfigurationCredentialFactory>();
-
 builder.Services.AddScoped<IAppConfigurationClient, AppConfigurationClient>();
 
+
 // -------------------------------------------------
-// Key Vault clients (Hub + Local)
-// IMPORTANT: keep them distinct
+// Key Vault
 // -------------------------------------------------
+
 builder.Services
     .AddOptions<LocalKeyVaultOptions>()
     .Bind(builder.Configuration.GetSection("KeyVault:Spoke"))
@@ -191,16 +138,16 @@ builder.Services.AddSingleton<IKeyVaultAuthOptions>(sp =>
     sp.GetRequiredService<IOptions<KeyVaultAuthOptions>>().Value);
 
 builder.Services.AddSingleton<IKeyVaultCredentialFactory, KeyVaultCredentialFactory>();
-
 builder.Services.AddScoped<ILocalKeyVaultSecretClient, LocalKeyVaultSecretClient>();
 builder.Services.AddScoped<IHubKeyVaultSecretClient, HubKeyVaultSecretClient>();
 
 
 // -------------------------------------------------
-// Application layer
+// Application Layer
 // -------------------------------------------------
-builder.Services.AddScoped<IConfigSyncHandler, ConfigSyncHandler>();
 
+builder.Services.AddScoped<IConfigSyncHandler, ConfigSyncHandler>();
 builder.Services.AddScoped<IResultOrchestrator, ResultOrchestrator>();
+
 
 builder.Build().Run();

@@ -1,13 +1,14 @@
 # Architecture – Config Management (Hub ↔ Spoke Sync)
 
-This document describes the **current** architecture as implemented in this repository.
-It is based on [docs/Agent-Knowledge-Baseline.md](Agent-Knowledge-Baseline.md) plus inspection of the existing code.
+This document describes the intended architecture for Hub ↔ Spoke configuration and secret synchronization.
+It is based on [docs/Agent-Knowledge-Baseline.md](Agent-Knowledge-Baseline.md) plus the design requirements captured in this document.
 
 ## Scope
 
-- Covers the existing hub/spoke sync model, shared packages, and the Spoke Functions host.
-- Documents the Hub orchestrator as it exists **today** (project scaffolding present; host logic not yet implemented in this repo).
-- Does not propose redesigns.
+- Defines the hub/spoke sync model for configuration settings and secrets.
+- Uses separate ingress vs normalized topics for both App Configuration and Key Vault events.
+- Standardizes a sync envelope (including `EventGridId`, GUID `CorrelationId`, and `traceparent`).
+- Defines tracing, idempotency, validation, retries, and DLQ handling requirements.
 
 ---
 
@@ -22,9 +23,9 @@ It is based on [docs/Agent-Knowledge-Baseline.md](Agent-Knowledge-Baseline.md) p
 
 ### External systems and dependencies
 - **Azure App Configuration (Hub)**: source of key/value changes.
-- **Azure Event Grid**: delivers App Configuration change events (e.g., `KeyValueModified`, `KeyValueDeleted`).
-- **Azure Service Bus (Hub)**: topics/subscriptions used to broadcast sync work to spokes.
-- **Azure Key Vault (Hub)**: source of secrets referenced by configuration.
+- **Azure Key Vault (Hub)**: source of secrets referenced by configuration and a source of secret version events.
+- **Azure Event Grid**: delivers App Configuration change events and Key Vault secret events.
+- **Azure Service Bus (Hub)**: topics/subscriptions used for ingress and normalized sync work.
 - **Azure Functions (Spoke)**: executes sync operations.
 - **Azure App Configuration (Spoke)**: target store for key/value settings and Key Vault references.
 - **Azure Key Vault (Spoke)**: target store for secrets.
@@ -34,189 +35,167 @@ It is based on [docs/Agent-Knowledge-Baseline.md](Agent-Knowledge-Baseline.md) p
 ```mermaid
 flowchart LR
   platform["Platform/Operations"] --> hubAppConfig["Hub: Azure App Configuration"]
+  platform --> hubKv["Hub: Azure Key Vault"]
   hubAppConfig -- change events --> eventGrid["Azure Event Grid"]
-  eventGrid --> sbIngress["Hub: Azure Service Bus Topic<br>app-config-event"]
-  sbIngress --> hubFunc["Hub: Event Orchestrator (Azure Functions)<br>(not present in repo yet)"]
-  hubFunc --> sb["Hub: Azure Service Bus Topic<br>app-config-sync"]
+  hubKv -- secret events --> eventGrid
 
-  sb --> spokeFunc["Spoke: Sync Orchestrator (Azure Functions)"]
+  eventGrid --> sbAcIngress["Hub: Service Bus Topic<br>app-config-event-topic"]
+  eventGrid --> sbKvIngress["Hub: Service Bus Topic<br>key-vault-event-topic"]
+
+  sbAcIngress --> hubFunc["Hub: Event Orchestrator (Azure Functions)"]
+  sbKvIngress --> hubFunc
+
+  hubFunc --> sbAcSync["Hub: Service Bus Topic<br>app-config-sync-topic"]
+  hubFunc --> sbKvSync["Hub: Service Bus Topic<br>key-vault-sync-topic"]
+
+  sbAcSync --> spokeFunc["Spoke: Sync Orchestrator (Azure Functions)"]
+  sbKvSync --> spokeFunc
   spokeFunc --> spokeAppConfig["Spoke: Azure App Configuration"]
   spokeFunc --> spokeKv["Spoke: Azure Key Vault"]
-  spokeFunc --> hubKv["Hub: Azure Key Vault"]
+  spokeFunc --> hubKv
 
   spokeFunc --> appInsights["Application Insights"]
 ```
 
 ### Service Bus resources (naming)
 
-The architecture uses three logical topics in the hub Service Bus namespace:
+The architecture uses separate topics for **raw ingress events** and **normalized sync work**:
 
-- **Ingress topic**: `app-config-event`
-  - Purpose: Event Grid delivery target for Azure App Configuration change events.
-- **Sync work topic**: `app-config-sync`
-  - Purpose: Canonical sync work messages (`EventMessage<ConfigSyncMessage>`) produced by the hub and consumed by spokes.
-  - **Per-spoke subscription naming**: `app-config-sync/{Organisation}/{EnvironmentName}`
-    - Each spoke creates its own subscription.
-    - Each subscription has its own dedicated DLQ at the broker level (standard Service Bus behavior).
-- **Results/telemetry topic**: `app-config-results-telemetry`
-  - Purpose: Transaction-level results emitted by functions (`ResultMessage<...>`).
+| Topic | Purpose |
+|---|---|
+| `app-config-event-topic` | Raw Azure App Configuration change events delivered by Event Grid. |
+| `app-config-sync-topic` | Normalized App Configuration sync messages consumed by spokes. |
+| `key-vault-event-topic` | Raw Azure Key Vault secret events delivered by Event Grid. |
+| `key-vault-sync-topic` | Normalized Key Vault sync messages consumed by spokes. |
+
+Per-spoke subscription naming (normalized topics):
+
+- `app-config-sync-topic/{Organisation}/{EnvironmentName}`
+- `key-vault-sync-topic/{Organisation}/{EnvironmentName}`
+
+Each subscription has its own dedicated DLQ at the broker level (standard Service Bus behavior).
+
+Optional (recommended): publish per-message processing outcomes to a dedicated results/telemetry topic (for example, `app-config-results-telemetry`).
 
 ---
 
 ## C4 – Level 2 (Containers)
 
-### Container inventory (as represented in repo)
+### Container inventory (planned)
 
-#### Hub container (intended; host currently missing)
-- **ConfigManagement.Event.Orchestrator**
-  - Status: Clean Architecture projects exist (`.Application`, `.Domain`, `.Infrastructure`), but there is **no Azure Functions host project** in this repo at this time.
-  - Intended runtime shape (per system description): an Azure Functions app that is triggered from a **Service Bus subscription** that receives **Event Grid-delivered App Configuration change events**.
-  - Intended responsibilities:
-    - Read App Configuration change notifications delivered via Service Bus
-    - Determine whether the changed key represents a plain value or a Key Vault reference
-    - Build and publish a canonical `EventMessage<ConfigSyncMessage>` to the sync work topic consumed by spokes
-
-#### Spoke container (implemented)
-- **ConfigManagement.Sync.Orchestrator.Functions**
-  - Type: Azure Functions v4, **Isolated Worker** (.NET 8)
-  - Trigger: Service Bus Topic Subscription (`ServiceBusTrigger`)
+#### Hub container
+- **Hub Event Orchestrator (Azure Functions)**
+  - Triggered by Service Bus subscriptions that receive Event Grid-delivered ingress events.
   - Responsibilities:
-    - Receive sync work messages (`EventMessage<ConfigSyncMessage>`)
-    - Apply configuration updates to spoke App Configuration
-    - Copy secrets from hub Key Vault to spoke Key Vault (for Key Vault reference sync)
-    - Publish a sync result message to a separate Service Bus topic
+    - Validate ingress event types
+    - Enforce filtering rules (App Configuration label `SYNC_SPOKE`, Key Vault secret tag `spokeSync: true`)
+    - Read current state (App Configuration values and/or Key Vault metadata) as needed
+    - Publish normalized sync messages to the appropriate sync topics
 
-#### Spoke application container (implemented)
-- **ConfigManagement.Sync.Orchestrator.Application**
+#### Spoke container
+- **Spoke Sync Orchestrator (Azure Functions)**
+  - Triggered by Service Bus topic subscriptions on the normalized sync topics.
   - Responsibilities:
-    - Core orchestration logic (`ConfigSyncHandler`)
-    - Result publishing orchestration (`SyncResultOrchestrator`)
+    - Process normalized sync messages (App Configuration and Key Vault)
+    - Upsert App Configuration keys into the spoke
+    - Upsert Key Vault secrets into the spoke (including for App Configuration Key Vault reference scenarios)
+    - Publish processing outcomes for observability (optional but recommended)
 
-#### Shared libraries (implemented)
-- **ConfigManagement.Shared.ServiceBus**
-  - Service Bus auth factory + publishers
-  - Message envelopes (`EventMessage<T>`, `ResultMessage<T>`)
-- **ConfigManagement.Shared.AppConfiguration**
-  - Safe wrapper around `Azure.Data.AppConfiguration` (`AppConfigurationClient`)
-  - Key Vault reference helper using the official App Configuration content type
-- **ConfigManagement.Shared.KeyVault**
-  - Safe wrapper around `Azure.Security.KeyVault.Secrets` (`KeyVaultSecretClient`)
-  - Interfaces split for hub vs local usage (`IHubKeyVaultSecretClient`, `ILocalKeyVaultSecretClient`)
-- **ConfigManagement.Shared.Domain**
-  - Shared contracts/models used by orchestrators (`ConfigSyncMessage`, enums, results)
+#### Application layer (logical)
+- Core orchestration logic
+- Outcome/result publishing orchestration (optional but recommended)
 
-#### Hub containers (partially implemented)
-- **ConfigManagement.Event.Orchestrator.{Domain|Application|Infrastructure}**
-  - Clean Architecture layers exist (projects present).
-  - No Functions/host project or triggering entrypoint is present in this repo at this time.
-  - Intended responsibility (per baseline): receive App Configuration change events and classify/publish downstream.
+#### Shared libraries (logical)
+- Service Bus publishing helpers
+- App Configuration client wrapper
+- Key Vault secret client wrapper
+- Shared contracts/models (envelopes + payloads)
 
-### Container interactions (implemented path)
+### Container interactions (conceptual)
 ```mermaid
 flowchart TB
-  sb["Azure Service Bus<br>Topic: SBUS_EVENT_TOPIC<br>Subscription: SBUS_EVENT_TOPIC_SUBSCRIPTION"] --> func["ConfigManagement.Sync.Orchestrator.Functions<br>ConfigSyncFunction"]
+  sb["Azure Service Bus<br>Topic subscription"] --> func["Spoke Sync Orchestrator (Azure Functions)"]
 
-  func --> app["ConfigManagement.Sync.Orchestrator.Application<br>ConfigSyncHandler"]
-  func --> results["ConfigManagement.Sync.Orchestrator.Application<br>SyncResultOrchestrator"]
+  func --> app["Application layer (handlers)"]
+  func --> results["Outcome publishing (optional)"]
 
-  app --> appCfg["Spoke App Configuration<br>(AppConfigurationClient)"]
-  app --> hubKv["Hub Key Vault<br>(IHubKeyVaultSecretClient)"]
-  app --> spokeKv["Spoke Key Vault<br>(ILocalKeyVaultSecretClient)"]
+  app --> appCfg["Spoke App Configuration"]
+  app --> hubKv["Hub Key Vault"]
+  app --> spokeKv["Spoke Key Vault"]
 
-  results --> sbRes["Azure Service Bus<br>Topic: SBUS_EVENT_RESULT_TOPIC"]
+  results --> sbRes["Azure Service Bus<br>Results/telemetry topic (optional)"]
 ```
-
-In deployed environments, these configuration values map to the concrete topic names above:
-
-- `SBUS_EVENT_TOPIC` → `app-config-sync`
-- `SBUS_EVENT_RESULT_TOPIC` → `app-config-results-telemetry`
-- `SBUS_EVENT_TOPIC_SUBSCRIPTION` → `app-config-sync/{Organisation}/{EnvironmentName}`
 
 ---
 
 ## C4 – Level 3 (Components)
 
-### Spoke Sync Orchestrator – Functions host
+### Hub Event Orchestrator (Azure Functions)
 
-**Primary entrypoint**
-- `ConfigSyncFunction.RunAsync(...)`
-  - Trigger: `ServiceBusTrigger("%SBUS_EVENT_TOPIC%", "%SBUS_EVENT_TOPIC_SUBSCRIPTION%")`
-  - Payload type: `EventMessage<ConfigSyncMessage>`
-  - Behavior:
-    1. Calls `IConfigSyncHandler.HandleAsync(message.Payload)`
-    2. Calls `ISyncResultOrchestrator.HandleResultAsync(message, result)` to publish success/failure
-    3. If result failed, throws an exception to surface failure to the Functions runtime
+- Triggered by Service Bus subscriptions on the ingress topics.
+- Validates ingress events and applies filtering rules.
+- Produces normalized sync messages using the standard envelope.
 
-**Composition root**
-- `Program.cs` wires:
-  - Application Insights telemetry
-  - `ConfigFactory` (environment variable configuration)
-  - Service Bus result publisher (`ResultTopicPublisher`)
-  - App Configuration client (`AppConfigurationClient`)
-  - Key Vault clients (explicitly distinct hub vs local)
+### Spoke Sync Orchestrator (Azure Functions)
 
-### Spoke Sync Orchestrator – Application layer
+- Triggered by Service Bus subscriptions on the normalized sync topics.
+- Validates and normalizes metadata:
+  - Ensure `CorrelationId` exists (GUID)
+  - Parse/propagate `traceparent`
+  - Enforce idempotency before side effects
+- Performs the upsert operation.
+- Publishes an outcome message for observability (optional but recommended).
+- Throws on failure so the Functions + Service Bus retry/DLQ policies re-drive the message.
 
-**`ConfigSyncHandler`**
-- Routes by `ConfigSyncMessage.Type`:
-  - `Value` → write/delete a simple App Configuration key/value
-  - `KeyVaultReference` → synchronize a secret from hub Key Vault to spoke Key Vault, and manage an App Configuration Key Vault reference key
+### Spoke processing behavior
 
-**Value sync (Type = Value)**
-- Upsert (`SyncAction.Upsert`)
-  - Calls `IAppConfigurationClient.SetConfigurationSettingAsync(key, value)`
-- Delete (`SyncAction.Delete`)
-  - Checks existence via `GetConfigurationSettingAsync(key)`
-  - Deletes via `DeleteConfigurationSettingAsync(key)`
-  - If missing, returns failure (treated as a failed run and will be retried by runtime)
+**App Configuration sync**
 
-**Key Vault reference sync (Type = KeyVaultReference)**
-- Requires `KeyVaultSecretUri`.
-- Extracts secret name from `.../secrets/{name}/...`.
-- Upsert:
-  1. Read secret from hub Key Vault (`IHubKeyVaultSecretClient.GetSecretValueAsync(name)`)
-  2. Create/update secret in local Key Vault (`ILocalKeyVaultSecretClient.CreateSecretAsync`/`SetSecretAsync`)
-  3. If the App Configuration key does not exist, create a Key Vault reference setting via `AddKeyVaultReferenceConfigurationSettingAsync(key, secretUri)`
-     - Note: the current implementation uses the URI provided in the incoming message (`KeyVaultSecretUri`).
-- Delete:
-  - Requires the App Configuration key to exist; deletes local secret then deletes the App Configuration key.
+- If `Payload.Type = Value`: upsert the App Configuration `Key` and `Value` into the spoke.
+- If `Payload.Type = KeyVaultReference`:
+  - Copy the secret identified by `KeyVaultSecretId` from hub Key Vault to spoke Key Vault.
+  - Upsert an App Configuration Key Vault reference at `Key` that points to the spoke secret URI.
 
-**`SyncResultOrchestrator`**
-- Produces `ResultMessage<ConfigSyncMessage>`:
-  - Copies `EventType`, `Source`, `EnvironmentName`, `CorrelationId`, `TraceId`, `SpanId` from the source message (or current execution context)
-  - Adds service metadata: `Organisation`, `Region`, `EnvironmentTier`, `ServiceName`
-  - Sets `Status` to `SUCCESS` or `FAILED`
-  - Publishes via `IResultPublisher` to the result topic
-  - Note: the `EnvironmentName` rename is now reflected in the shared contracts and publishers.
+**Key Vault sync**
 
-### Shared Service Bus components
-
-- `EventMessage<TPayload>`: standard envelope for work messages.
-- `ResultMessage<TPayload>`: standard envelope for outcomes.
-- `ResultTopicPublisher` publishes JSON to Service Bus with:
-  - `CorrelationId` and `Subject = EventType`
-  - Application properties: `status`, `source`, `environmentName`, optional `message`
+- Upsert the secret identified by `SecretId` (and named by `SecretName`) from hub Key Vault to spoke Key Vault.
 
 ---
 
 ## Hub ↔ Spoke Message Flow
 
-### End-to-end flow (current + intended upstream)
+### End-to-end flows
+
+This design separates **ingestion** (raw Event Grid events) from **processing/publishing** (normalized sync messages).
+
+#### Flow A — App Configuration change → App Config sync
 
 1. Hub App Configuration key/value changes occur.
-2. Event Grid emits App Configuration change events.
-3. Event Grid delivers those events into the **Service Bus topic** `app-config-event` (ingress).
-4. Hub Event Orchestrator (Azure Functions; **not present in repo yet**) is triggered by that Service Bus subscription.
-5. Hub Event Orchestrator determines whether the changed key should be treated as:
-   - `ConfigSyncMessageType.Value` (plain key/value), or
-   - `ConfigSyncMessageType.KeyVaultReference` (key points to a Key Vault secret reference)
-6. Hub Event Orchestrator publishes a canonical work message (`EventMessage<ConfigSyncMessage>`) to the **sync work topic** `app-config-sync`.
-7. Each spoke has a Service Bus subscription; the Spoke Functions host processes the message.
-8. Spoke writes to spoke App Configuration and/or spoke Key Vault (and reads hub Key Vault when needed).
-9. Spoke publishes a result message to the Service Bus **results/telemetry topic** `app-config-results-telemetry`.
-10. Failures surface via Functions runtime retries; Service Bus DLQ is available at the broker level.
+2. Event Grid emits an App Configuration change event.
+3. Event Grid delivers the raw event into the **Service Bus topic** `app-config-event-topic` (ingress).
+4. Hub Event Orchestrator (Azure Functions) is triggered by that subscription.
+5. Hub Event Orchestrator:
+  - Validates the event type
+  - Validates `label == SYNC_SPOKE`
+  - Reads the latest key value
+  - Determines whether the setting is a plain value or a Key Vault reference
+6. Hub publishes a normalized sync message to `app-config-sync-topic`.
+7. Each spoke processes the message from its subscription.
+8. Spoke upserts the key into spoke App Configuration; if a Key Vault reference, it also synchronizes the referenced secret hub→spoke.
+9. Spoke publishes a result message for observability (optional but recommended).
 
-### Hub message classification and mapping (intended)
+#### Flow B — Key Vault secret new version → Key Vault sync
+
+1. Hub Key Vault secret version is created/updated.
+2. Event Grid emits a Key Vault secret event.
+3. Event Grid delivers the raw event into the **Service Bus topic** `key-vault-event-topic` (ingress).
+4. Hub Event Orchestrator:
+  - Validates the event type
+  - Validates secret tag `spokeSync: true`
+5. Hub publishes a normalized secret sync message to `key-vault-sync-topic`.
+6. Each spoke processes the message from its subscription and upserts the latest secret value hub→spoke.
+
+### Hub message classification and mapping
 
 The Hub Event Orchestrator’s purpose is to translate App Configuration change notifications into the canonical message consumed by the Spoke Sync Orchestrator.
 
@@ -228,7 +207,8 @@ The Hub Event Orchestrator’s purpose is to translate App Configuration change 
 | Event type | Meaning |
 |---|---|
 | `Microsoft.AppConfiguration.KeyValueModified` | Key-value created or replaced (treated as `SyncAction.Upsert`). |
-| `Microsoft.AppConfiguration.KeyValueDeleted` | Key-value deleted (treated as `SyncAction.Delete`). |
+
+Design assumption: delete handling is out of scope; deleted events are not normalized into sync work.
 
 #### Event schema (example)
 
@@ -254,51 +234,46 @@ Event Grid delivers an array of events; the hub orchestrator uses `data.key` and
 ```
 
 **Decision: Value vs Key Vault reference**
-- If the changed App Configuration setting represents a plain value → use `ConfigSyncMessageType.Value`.
-- If the changed setting represents a Key Vault reference → use `ConfigSyncMessageType.KeyVaultReference`.
+- If the changed App Configuration setting represents a plain value → set `Payload.Type = Value`.
+- If the changed setting represents a Key Vault reference → set `Payload.Type = KeyVaultReference`.
 
-**Output (to `SBUS_EVENT_TOPIC`)**
-- `EventMessage<ConfigSyncMessage>` where `ConfigSyncMessage` fields are populated as:
+**Output (to `app-config-sync-topic`)**
+
+Normalized envelope (standard): `EventGridId`, GUID `CorrelationId`, `traceparent`, `TimestampUtc`, `Payload`.
+
+App Configuration sync payload fields:
   - `Key`: the App Configuration key
   - `Type`: `Value` or `KeyVaultReference`
-  - `SyncAction`: `Upsert` for modified/created events; `Delete` for deleted events
-  - `Value`: populated only for `Type = Value` (the setting’s value)
-  - `KeyVaultSecretUri`: populated only for `Type = KeyVaultReference` (the hub Key Vault secret URI)
+  - `SyncAction`: `Upsert`
+  - `Value`: required when `Type = Value`
+  - `KeyVaultSecretId`: required when `Type = KeyVaultReference`
 
-The envelope fields (`EventType`, `Source`, `EnvironmentName`, `CorrelationId`, `TraceId`, `SpanId`) should be set so downstream processing and result publishing can retain end-to-end traceability.
-
-### Spoke execution flow (implemented)
+### Spoke execution flow
 ```mermaid
 sequenceDiagram
   autonumber
   participant SB as Service Bus Topic Subscription
-  participant F as Spoke Function (ConfigSyncFunction)
-  participant H as Application (ConfigSyncHandler)
+  participant F as Spoke Function
+  participant H as Application layer
   participant AC as Spoke App Configuration
   participant HKV as Hub Key Vault
   participant SKV as Spoke Key Vault
-  participant R as SyncResultOrchestrator
-  participant SBR as Service Bus Result Topic
+  participant R as Outcome publisher
+  participant SBR as Service Bus Results Topic
 
-  SB->>F: Deliver EventMessage<ConfigSyncMessage>
-  F->>H: HandleAsync(payload)
+  SB->>F: Deliver Standard Envelope + Payload
+  F->>H: Validate, idempotency, handle
 
   alt Type=Value & Action=Upsert
-    H->>AC: SetConfigurationSettingAsync(key,value)
-  else Type=Value & Action=Delete
-    H->>AC: GetConfigurationSettingAsync(key)
-    H->>AC: DeleteConfigurationSettingAsync(key)
+    H->>AC: Upsert key/value
   else Type=KeyVaultReference & Action=Upsert
-    H->>HKV: GetSecretValueAsync(secretName)
-    H->>SKV: CreateSecretAsync/SetSecretAsync(secretName, value)
-    H->>AC: AddKeyVaultReferenceConfigurationSettingAsync(key, secretUri)
-  else Type=KeyVaultReference & Action=Delete
-    H->>SKV: DeleteSecretAsync(secretName)
-    H->>AC: DeleteConfigurationSettingAsync(key)
+    H->>HKV: Read secret value
+    H->>SKV: Upsert secret value
+    H->>AC: Upsert Key Vault reference
   end
 
-  F->>R: HandleResultAsync(sourceMessage, result)
-  R->>SBR: Publish ResultMessage (SUCCESS/FAILED)
+  F->>R: Publish outcome (SUCCESS/FAILED)
+  R->>SBR: Send result message (optional)
 
   alt result failed
     F-->>SB: throw exception (triggers retry / DLQ by platform)
@@ -307,17 +282,16 @@ sequenceDiagram
 
 ---
 
-## Key Design Decisions (Observed in Code)
+## Key Design Decisions
 
 1. **Clean Architecture alignment**
    - Separate Domain/Application/Infrastructure projects and a dedicated Functions host for the Spoke orchestrator.
 
 2. **Shared package reuse as a hard constraint**
-  - App Configuration, Key Vault, Service Bus, and shared domain contracts live under `src/Shared` and are consumed by orchestrators.
+  - Use shared libraries for App Configuration, Key Vault, Service Bus, and shared contracts.
 
 3. **Event envelope standardization**
-  - Work and result messages carry: `EventType`, `Source`, `EnvironmentName`, `CorrelationId`, `TraceId`, `SpanId`, `TimestampUtc`, `Payload`.
-  - Results include additional service metadata fields: `Organisation`, `Region`, `EnvironmentTier`, `ServiceName`.
+  - Standardize on an envelope that always includes `EventGridId`, GUID `CorrelationId`, `traceparent`, `Payload`, and `TimestampUtc`.
 
 4. **Result topic pattern for observability**
    - Every processed message leads to a result publication (`SUCCESS`/`FAILED`), enabling downstream monitoring without scraping function logs.
@@ -333,16 +307,60 @@ sequenceDiagram
    - Create-only (`Add*`) vs upsert (`Set*`) methods are distinct.
    - Key Vault references use the official content type (`application/vnd.microsoft.appconfig.keyvaultref+json`).
 
+## Requirements
+
+### Objectives
+
+1. Standardize the message envelope
+2. Eliminate duplicate logic
+3. Ensure idempotent processing
+4. Centralize validation logic
+5. Enforce tracing standards
+6. Normalize event transformation (raw → normalized)
+7. Separate ingestion, processing, and publishing layers
+
+### Logging & observability
+
+All Functions (Hub and Spoke) should:
+
+- Generate `CorrelationId` if missing (GUID)
+- Propagate `traceparent`
+- Log `TraceId`, `SpanId`, and `CorrelationId` (structured logging)
+- Support retries and DLQ handling via Service Bus + Functions runtime
+- Enforce idempotency
+
+### Non-functional requirements
+
+- At-least-once delivery support
+- Idempotent updates
+- Horizontal scalability
+- Retry with exponential backoff
+- Dead-letter queue handling
+- W3C trace compliance (ID sizes; `traceparent` propagation)
+
+### Assumptions
+
+- Hub is source of truth
+- Spokes never write back to Hub
+- Only `Upsert` is supported
+- Delete flow is not implemented
+
 ---
 
-## Configuration Surface (Observed)
+## Configuration Surface
 
-The Spoke Functions host reads its configuration from environment variables via `ConfigFactory`, including:
+The Functions apps require configuration for:
 
 - Service identity / environment metadata: `ORGANISATION`, `REGION`, `ENVIRONMENT_TIER`, `ENVIRONMENT_NAME`, `SERVICE_NAME`
 - Service Bus:
   - `ServiceBus__FullyQualifiedNamespace`
-  - `SBUS_EVENT_TOPIC`, `SBUS_EVENT_TOPIC_SUBSCRIPTION`, `SBUS_EVENT_RESULT_TOPIC`
+  - Topic names:
+    - `app-config-event-topic`, `app-config-sync-topic`
+    - `key-vault-event-topic`, `key-vault-sync-topic`
+  - Subscription names (per spoke):
+    - `app-config-sync-topic/{Organisation}/{EnvironmentName}`
+    - `key-vault-sync-topic/{Organisation}/{EnvironmentName}`
+  - Optional results/telemetry topic name (if used): `app-config-results-telemetry`
   - plus `ServiceBus__AuthType`, `ServiceBus__ManagedIdentityClientId`, etc.
 - App Configuration:
   - `AppConfiguration__Endpoint`
@@ -371,6 +389,7 @@ The system processes messages from Service Bus with **at-least-once delivery** s
 
 - `STORAGE_ACCOUNT_TABLE_URI`: the Table endpoint for the Function storage account (e.g., `https://<storage>.table.core.windows.net`).
 - `IDEMPOTENCY_TABLE_NAME`: the table name (example from Terraform: `configSyncIdempotency`).
+- `IDEMPOTENCY_TABLE_NAME`: the table name (for example, `configSyncIdempotency`).
 
 ### Table schema (logical)
 
@@ -386,11 +405,14 @@ Store one row per processed message/event:
 
 ### Idempotency key
 
-Preferred: the hub sets `CorrelationId` to a unique event identifier (for App Configuration events, the Event Grid `id` value is a suitable candidate). In that case:
+Preferred: use the Event Grid event identifier provided as `EventGridId` in the standard envelope. In that case:
 
-- `RowKey = CorrelationId`
+- `RowKey = EventGridId`
 
-Fallback (if `CorrelationId` is not reliably unique): derive a stable key from message envelope + payload and hash it (e.g., SHA-256) to keep `RowKey` short.
+Fallbacks:
+
+- If `EventGridId` is missing (should be rare), use `CorrelationId` (GUID) when available.
+- If neither is available, derive a stable key from envelope + payload and hash it (e.g., SHA-256) to keep `RowKey` short.
 
 ### Processing flow
 
@@ -420,7 +442,7 @@ The Function App managed identity requires permission to the storage account:
 ### Operational considerations
 
 - Data retention: idempotency rows grow over time. Define a retention window and a cleanup strategy (timer-driven cleanup function or storage lifecycle management where available).
-- Observability: include `CorrelationId`, `TraceId`, and `SpanId` in logs and result messages so operators can correlate duplicates/retries with idempotency decisions.
+- Observability: include `EventGridId`, `CorrelationId`, and `traceparent` (and the derived `TraceId`/`SpanId`) in logs and result messages so operators can correlate duplicates/retries with idempotency decisions.
 
 ---
 
@@ -430,18 +452,27 @@ This design follows the guidance in [docs/distributed-tracing-agent-knowledge.md
 
 ### What to cover in the implementation
 
+#### ID standards
+
+| ID Type | Standard | Format | Length |
+|---|---|---|---|
+| `TraceId` | W3C Trace Context | 16 bytes (hex) | 32 hex characters |
+| `SpanId` | W3C Trace Context | 8 bytes (hex) | 16 hex characters |
+| `CorrelationId` | GUID | 8-4-4-4-12 hex format | 36 characters (incl. hyphens) |
+
+`traceparent` (envelope field) is represented as:
+
+  "{TraceId}-{SpanId}"
+
 - **One Trace ID per end-to-end workflow**: the Trace ID should be created at the system boundary (in this architecture, the hub ingress publisher or the spoke consumer if the upstream does not supply it) and then propagated unchanged across messages and results.
 - **One Span per operation**: each service execution should record its own span for message processing and any downstream calls (App Configuration, Key Vault, Service Bus).
 - **Prefer automatic propagation**: rely on framework/SDK instrumentation (Application Insights and/or OpenTelemetry) to extract/inject W3C trace context where possible.
 - **W3C Trace Context compatibility**: ensure trace context can be represented as `traceparent`/`tracestate` in transport metadata (especially across asynchronous messaging).
-- **Logging uses telemetry context**: all logs emitted while processing a single message should carry `CorrelationId`, `TraceId`, and `SpanId` as structured fields (via a logging scope at the Functions entrypoint).
+- **Logging uses telemetry context**: all logs emitted while processing a single message should carry `EventGridId`, `CorrelationId`, and `traceparent` (and/or derived `TraceId` and `SpanId`) as structured fields (via a logging scope at the Functions entrypoint).
 
 ### Message contracts (what must be present)
 
-The message envelope models already include a required `TraceId`. To align with span-per-operation guidance, the envelopes also carry an optional `SpanId`.
-
-- Work envelope: `EventMessage<TPayload>` includes `TraceId` and `SpanId`
-- Result envelope: `ResultMessage<TPayload>` includes `TraceId` and `SpanId`
+The standard sync envelope includes `EventGridId`, a GUID `CorrelationId`, and `traceparent`. `TraceId` and `SpanId` are derived from `traceparent` for logging and correlation.
 
 When available, the publishers should also stamp these values into Service Bus application properties to support message tracing without deserializing the body.
 
@@ -449,80 +480,43 @@ When available, the publishers should also stamp these values into Service Bus a
 
 ## Contracts (Appendix)
 
-This section summarizes the **current** message and domain contracts as implemented under `src/Shared`.
+All normalized sync messages (App Config sync and Key Vault sync) use the same envelope shape:
 
-### Work message envelope: `EventMessage<TPayload>`
+```json
+{
+  "EventGridId": "string",
+  "CorrelationId": "guid",
+  "traceparent": "traceId-spanId",
+  "Payload": {},
+  "TimestampUtc": "ISO-8601 datetime"
+}
+```
 
-Used for sync work delivered to the Spoke function.
+Envelope field notes:
 
-| Field | Type | Notes |
-|---|---|---|
-| `EventType` | `string` | Copied into Service Bus `Subject` by the event publisher. |
-| `Source` | `string` | Also stamped into Service Bus application property `source`. |
-| `EnvironmentName` | `string` | Renamed from `Environment` to avoid naming conflicts/ambiguity; also stamped into a Service Bus application property (see mapping below). |
-| `CorrelationId` | `string` | Copied into Service Bus `CorrelationId` for end-to-end tracing. |
-| `TraceId` | `string` | Transported in the JSON body (not mapped to Service Bus system properties). |
-| `SpanId` | `string?` | Optional span identifier for the producing operation; used for logging and result correlation. |
-| `Payload` | `TPayload` | For sync work, payload is `ConfigSyncMessage`. |
-| `TimestampUtc` | `DateTimeOffset` | Defaults to `UtcNow` at creation time. |
+- `EventGridId`: original Event Grid `id` from the ingress event
+- `CorrelationId`: GUID; generated if missing
+- `traceparent`: `{TraceId}-{SpanId}` where TraceId is 32 hex chars and SpanId is 16 hex chars
+- `TimestampUtc`: publish time of the normalized message
 
-### Sync payload: `ConfigSyncMessage`
+### App Config sync payload
 
-The canonical payload consumed by the Spoke sync handler.
+```json
+{
+  "Key": "string",
+  "Type": "Value|KeyVaultReference",
+  "SyncAction": "Upsert",
+  "Value": "string (required when Type=Value)",
+  "KeyVaultSecretId": "string (required when Type=KeyVaultReference)"
+}
+```
 
-| Field | Type | When populated |
-|---|---|---|
-| `Key` | `string` | Always. The App Configuration key to mutate in the spoke. |
-| `Type` | `ConfigSyncMessageType` | Always. Determines handling path. |
-| `SyncAction` | `SyncAction` | Always. Upsert vs Delete. |
-| `Value` | `string?` | Only when `Type = Value` and `SyncAction = Upsert`. |
-| `KeyVaultSecretUri` | `string?` | Only when `Type = KeyVaultReference` (hub secret URI). |
+### Key Vault sync payload
 
-### Enums
-
-#### `ConfigSyncMessageType`
-
-| Value | Meaning |
-|---|---|
-| `Value` | Sync a plain App Configuration key/value. |
-| `KeyVaultReference` | Sync a Key Vault reference: copy secret hub→spoke, and ensure the spoke App Configuration key exists as a Key Vault reference. |
-
-#### `SyncAction`
-
-| Value | Meaning |
-|---|---|
-| `Upsert` | Create or update the target state in the spoke. |
-| `Delete` | Delete the target state in the spoke. |
-
-### Result message envelope: `ResultMessage<TPayload>`
-
-Published by the Spoke after handling, to the result topic.
-
-| Field | Type | Notes |
-|---|---|---|
-| `EventType` | `string` | Copied into Service Bus `Subject` by the result publisher. |
-| `Source` | `string` | Also stamped into Service Bus application property `source`. |
-| `Organisation` | `string` | Additional metadata for multi-tenant/multi-org routing and reporting. |
-| `EnvironmentTier` | `string` | Additional metadata (e.g., dev/test/prod). |
-| `EnvironmentName` | `string` | Renamed from `Environment` to avoid naming conflicts/ambiguity; also stamped into a Service Bus application property (see mapping below). |
-| `ServiceName` | `string` | Additional metadata identifying the emitting service. |
-| `CorrelationId` | `string` | Copied into Service Bus `CorrelationId`. |
-| `TraceId` | `string` | Transported in the JSON body. |
-| `SpanId` | `string?` | Optional span identifier for the emitting operation; used for logging and correlation. |
-| `Status` | `string` | Currently `SUCCESS` or `FAILED`; also stamped into application property `status`. |
-| `Message` | `string?` | Optional failure detail; stamped into application property `message` when non-empty. |
-| `Payload` | `TPayload` | For sync outcomes, payload is `ConfigSyncMessage` (original work payload). |
-| `TimestampUtc` | `DateTimeOffset` | Set by the orchestrator at publish time (`UtcNow`). |
-
-### Service Bus mapping (publishers)
-
-When publishing JSON messages:
-
-- Work events (`EventTopicPublisher`)
-  - System properties: `Subject = EventType`, `CorrelationId = CorrelationId`, `ContentType = application/json`
-  - Application properties: `source`, `environmentName`, `traceId`, optional `spanId`
-
-- Results (`ResultTopicPublisher`)
-  - System properties: `Subject = EventType`, `CorrelationId = CorrelationId`, `ContentType = application/json`
-  - Application properties: `status`, `source`, `environmentName`, `traceId`, optional `spanId`, optional `message`
-  - Body fields: `Organisation`, `EnvironmentTier`, `EnvironmentName`, `ServiceName` are included in the JSON contract (in addition to the envelope fields above).
+```json
+{
+  "SecretName": "string",
+  "SecretId": "string",
+  "SyncAction": "Upsert"
+}
+```

@@ -4,6 +4,11 @@ variable "environment" {
 
 }
 
+variable "environment_tier" {
+  description = "Environment tier (e.g. devtest, production)"
+  type        = string
+}
+
 variable "organisation" {
   description = "Name of the organisation (xxxx, xxyy)"
   type        = string

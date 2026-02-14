@@ -1,6 +1,7 @@
 # ============================
 # Global
 # ============================
+environment_tier  = "production"
 environment  = "prdhub"
 organisation = "xxuk"
 

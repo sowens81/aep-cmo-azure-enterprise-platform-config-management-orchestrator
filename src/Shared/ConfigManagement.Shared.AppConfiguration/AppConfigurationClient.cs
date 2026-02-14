@@ -2,10 +2,19 @@
 using Azure.Data.AppConfiguration;
 using ConfigManagement.Shared.AppConfiguration.Constants;
 using ConfigManagement.Shared.AppConfiguration.Interfaces;
+using ConfigManagement.Shared.AppConfiguration.OpenTelemetry;
 using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 
 namespace ConfigManagement.Shared.AppConfiguration;
 
+/// <summary>
+/// Provides operations for interacting with Azure App Configuration.
+/// </summary>
+/// <remarks>
+/// Each operation creates an OpenTelemetry span (<see cref="ActivityKind.Client"/>)
+/// to enable distributed tracing and dependency visibility.
+/// </remarks>
 public sealed class AppConfigurationClient : IAppConfigurationClient
 {
     private readonly ConfigurationClient _client;
@@ -35,6 +44,15 @@ public sealed class AppConfigurationClient : IAppConfigurationClient
         string? label = null,
         CancellationToken cancellationToken = default)
     {
+        using var activity = Telemetry.Source.StartActivity(
+            "AppConfiguration Get",
+            ActivityKind.Client);
+
+        activity?.SetTag("rpc.system", "azure.appconfiguration");
+        activity?.SetTag("rpc.method", "GetConfigurationSetting");
+        activity?.SetTag("appconfig.key", key);
+        activity?.SetTag("appconfig.label", label ?? "<null>");
+
         try
         {
             await _client.GetConfigurationSettingAsync(
@@ -46,7 +64,20 @@ public sealed class AppConfigurationClient : IAppConfigurationClient
         }
         catch (RequestFailedException ex) when (ex.Status == 404)
         {
+            activity?.SetStatus(ActivityStatusCode.Error, "Not Found");
             return false;
+        }
+        catch (Exception ex)
+        {
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+
+            _logger.LogError(
+                ex,
+                "Failed to get App Configuration key {Key}, Label={Label}",
+                key,
+                label ?? "<null>");
+
+            throw;
         }
     }
 
@@ -61,6 +92,15 @@ public sealed class AppConfigurationClient : IAppConfigurationClient
         string contentType = ContentTypes.PlainText,
         CancellationToken cancellationToken = default)
     {
+        using var activity = Telemetry.Source.StartActivity(
+            "AppConfiguration Add",
+            ActivityKind.Client);
+
+        activity?.SetTag("rpc.system", "azure.appconfiguration");
+        activity?.SetTag("rpc.method", "AddConfigurationSetting");
+        activity?.SetTag("appconfig.key", key);
+        activity?.SetTag("appconfig.label", label ?? "<null>");
+
         var setting = new ConfigurationSetting(key, value, label)
         {
             ContentType = contentType,
@@ -81,7 +121,8 @@ public sealed class AppConfigurationClient : IAppConfigurationClient
         }
         catch (RequestFailedException ex) when (ex.Status == 412)
         {
-            // Already exists
+            activity?.SetStatus(ActivityStatusCode.Error, "Already Exists");
+
             _logger.LogInformation(
                 "App Configuration key already exists {Key}, Label={Label}",
                 key,
@@ -89,7 +130,23 @@ public sealed class AppConfigurationClient : IAppConfigurationClient
 
             return false;
         }
+        catch (Exception ex)
+        {
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+
+            _logger.LogError(
+                ex,
+                "Failed to add App Configuration key {Key}, Label={Label}",
+                key,
+                label ?? "<null>");
+
+            throw;
+        }
     }
+
+    // ------------------------------------------------------------
+    // ADD KEY VAULT REFERENCE (CREATE ONLY)
+    // ------------------------------------------------------------
 
     public async Task<bool> AddKeyVaultReferenceConfigurationSettingAsync(
         string key,
@@ -98,6 +155,16 @@ public sealed class AppConfigurationClient : IAppConfigurationClient
         string contentType = ContentTypes.KeyVaultReference,
         CancellationToken cancellationToken = default)
     {
+        using var activity = Telemetry.Source.StartActivity(
+            "AppConfiguration Add KeyVaultReference",
+            ActivityKind.Client);
+
+        activity?.SetTag("rpc.system", "azure.appconfiguration");
+        activity?.SetTag("rpc.method", "AddKeyVaultReferenceConfigurationSetting");
+        activity?.SetTag("appconfig.key", key);
+        activity?.SetTag("appconfig.label", label ?? "<null>");
+        activity?.SetTag("appconfig.kv.reference", secretUri.ToString());
+
         var setting = CreateKeyVaultReferenceSetting(
             key,
             secretUri,
@@ -119,7 +186,26 @@ public sealed class AppConfigurationClient : IAppConfigurationClient
         }
         catch (RequestFailedException ex) when (ex.Status == 412)
         {
+            activity?.SetStatus(ActivityStatusCode.Error, "Already Exists");
+
+            _logger.LogInformation(
+                "Key Vault reference already exists {Key}, Label={Label}",
+                key,
+                label ?? "<null>");
+
             return false;
+        }
+        catch (Exception ex)
+        {
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+
+            _logger.LogError(
+                ex,
+                "Failed to add Key Vault reference {Key}, Label={Label}",
+                key,
+                label ?? "<null>");
+
+            throw;
         }
     }
 
@@ -133,17 +219,40 @@ public sealed class AppConfigurationClient : IAppConfigurationClient
         string? label = null,
         CancellationToken cancellationToken = default)
     {
+        using var activity = Telemetry.Source.StartActivity(
+            "AppConfiguration Set",
+            ActivityKind.Client);
 
-        await _client.SetConfigurationSettingAsync(
-            key,
-            value,
-            label,
-            cancellationToken);
+        activity?.SetTag("rpc.system", "azure.appconfiguration");
+        activity?.SetTag("rpc.method", "SetConfigurationSetting");
+        activity?.SetTag("appconfig.key", key);
+        activity?.SetTag("appconfig.label", label ?? "<null>");
 
-        _logger.LogInformation(
-            "Set App Configuration key {Key}, Label={Label}",
-            key,
-            label ?? "<null>");
+        try
+        {
+            await _client.SetConfigurationSettingAsync(
+                key,
+                value,
+                label,
+                cancellationToken);
+
+            _logger.LogInformation(
+                "Set App Configuration key {Key}, Label={Label}",
+                key,
+                label ?? "<null>");
+        }
+        catch (Exception ex)
+        {
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+
+            _logger.LogError(
+                ex,
+                "Failed to set App Configuration key {Key}, Label={Label}",
+                key,
+                label ?? "<null>");
+
+            throw;
+        }
     }
 
     // ------------------------------------------------------------
@@ -155,15 +264,39 @@ public sealed class AppConfigurationClient : IAppConfigurationClient
         string? label = null,
         CancellationToken cancellationToken = default)
     {
-        await _client.DeleteConfigurationSettingAsync(
-            key,
-            label,
-            cancellationToken);
+        using var activity = Telemetry.Source.StartActivity(
+            "AppConfiguration Delete",
+            ActivityKind.Client);
 
-        _logger.LogInformation(
-            "Deleted App Configuration key {Key}, Label={Label}",
-            key,
-            label ?? "<null>");
+        activity?.SetTag("rpc.system", "azure.appconfiguration");
+        activity?.SetTag("rpc.method", "DeleteConfigurationSetting");
+        activity?.SetTag("appconfig.key", key);
+        activity?.SetTag("appconfig.label", label ?? "<null>");
+
+        try
+        {
+            await _client.DeleteConfigurationSettingAsync(
+                key,
+                label,
+                cancellationToken);
+
+            _logger.LogInformation(
+                "Deleted App Configuration key {Key}, Label={Label}",
+                key,
+                label ?? "<null>");
+        }
+        catch (Exception ex)
+        {
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+
+            _logger.LogError(
+                ex,
+                "Failed to delete App Configuration key {Key}, Label={Label}",
+                key,
+                label ?? "<null>");
+
+            throw;
+        }
     }
 
     // ------------------------------------------------------------

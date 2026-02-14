@@ -3,8 +3,17 @@ using ConfigManagement.Sync.Orchestrator.Application.Options;
 
 namespace ConfigManagement.Sync.Orchestrator.Application.Context;
 
+/// <summary>
+/// Default implementation of <see cref="IServiceMetadata"/>.
+/// </summary>
 public sealed class ServiceMetadataContext : IServiceMetadata
 {
+    public string Organisation { get; }
+    public string Region { get; }
+    public string EnvironmentTier { get; }
+    public string EnvironmentName { get; }
+    public string ServiceName { get; }
+
     public ServiceMetadataContext(ServiceMetaDataOptions options)
     {
         Organisation = options.Organisation;
@@ -14,10 +23,12 @@ public sealed class ServiceMetadataContext : IServiceMetadata
         ServiceName = options.ServiceName;
     }
 
-    public string Organisation { get; }
-    public string Region { get; }
-    public string EnvironmentTier { get; }
-    public string EnvironmentName { get; }
-    public string ServiceName { get; }
-
+    public IReadOnlyDictionary<string, object> ToResourceAttributes()
+        => new Dictionary<string, object>
+        {
+            ["organisation"] = Organisation,
+            ["region"] = Region,
+            ["environment.tier"] = EnvironmentTier,
+            ["environment.name"] = EnvironmentName
+        };
 }

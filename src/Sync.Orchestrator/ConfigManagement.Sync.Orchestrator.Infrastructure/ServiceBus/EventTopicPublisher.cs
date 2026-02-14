@@ -1,6 +1,7 @@
 ﻿using ConfigManagement.Shared.ServiceBus;
 using ConfigManagement.Shared.ServiceBus.Interfaces;
 using ConfigManagement.Shared.ServiceBus.Models;
+using ConfigManagement.Sync.Orchestrator.Domain.Models;
 using ConfigManagement.Sync.Orchestrator.Infrastructure.Interfaces;
 using Microsoft.Extensions.Logging;
 
