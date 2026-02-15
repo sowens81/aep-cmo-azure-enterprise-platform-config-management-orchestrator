@@ -4,6 +4,8 @@ using ConfigManagement.Shared.AppConfiguration.Enums;
 using ConfigManagement.Shared.AppConfiguration.Interfaces;
 using Microsoft.Extensions.Logging;
 
+namespace ConfigManagement.Shared.AppConfiguration.Authentication;
+
 public sealed class AppConfigurationCredentialFactory
     : IAppConfigurationCredentialFactory
 {

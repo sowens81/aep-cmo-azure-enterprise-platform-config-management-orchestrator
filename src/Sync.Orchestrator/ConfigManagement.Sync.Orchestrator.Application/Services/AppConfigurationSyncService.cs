@@ -325,7 +325,7 @@ public class AppConfigurationSyncService : IAppConfigurationSyncService
             var localSecret = await _keyVaultSecretClient
                 .GetSecretValueAsync(hubSecretName, cancellationToken);
 
-            var localSecretUri = localSecret?.Value.Id
+            var localSecretUri = localSecret?.Id
                 ?? throw new InvalidOperationException("Local secret URI missing.");
 
             var localSetting = await _appConfigurationClient

@@ -1,6 +1,4 @@
-﻿using ConfigManagement.Sync.Orchestrator.Application.Context;
-using ConfigManagement.Sync.Orchestrator.Application.Options;
-using ConfigManagement.Sync.Orchestrator.Functions.Context;
+﻿using ConfigManagement.Sync.Orchestrator.Functions.Context;
 using ConfigManagement.Sync.Orchestrator.Functions.Options;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

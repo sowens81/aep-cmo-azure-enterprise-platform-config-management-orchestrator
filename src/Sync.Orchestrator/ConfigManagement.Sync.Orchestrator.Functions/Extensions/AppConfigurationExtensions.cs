@@ -1,13 +1,9 @@
-﻿using ConfigManagement.Shared.AppConfiguration.Enums;
+﻿using ConfigManagement.Shared.AppConfiguration.Authentication;
+using ConfigManagement.Shared.AppConfiguration.Enums;
 using ConfigManagement.Shared.AppConfiguration.Interfaces;
 using ConfigManagement.Shared.AppConfiguration.Options;
-using ConfigManagement.Shared.KeyVault;
-using ConfigManagement.Shared.KeyVault.Authentication;
-using ConfigManagement.Shared.KeyVault.Interfaces;
-using ConfigManagement.Shared.KeyVault.Options;
 using ConfigManagement.Sync.Orchestrator.Infrastructure.AppConfiguration;
 using ConfigManagement.Sync.Orchestrator.Infrastructure.Interfaces;
-using ConfigManagement.Sync.Orchestrator.Infrastructure.KeyVault;
 using ConfigManagement.Sync.Orchestrator.Infrastructure.Options;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
