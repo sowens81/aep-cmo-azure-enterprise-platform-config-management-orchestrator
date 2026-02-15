@@ -28,6 +28,9 @@ public abstract class KeyVaultSecretClient : IKeyVaultSecretClient
         if (string.IsNullOrWhiteSpace(options.Endpoint))
             throw new ArgumentException("VaultUri is required.", nameof(options.Endpoint));
 
+        if (credentialFactory is null)
+            throw new ArgumentNullException(nameof(credentialFactory));
+
         _client = new SecretClient(
             new Uri(options.Endpoint),
             credentialFactory.CreateCredential());

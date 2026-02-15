@@ -3,6 +3,8 @@ using ConfigManagement.Shared.ServiceBus.Interfaces;
 using ConfigManagement.Shared.ServiceBus.Models;
 using ConfigManagement.Shared.ServiceBus.OpenTelemetry;
 using Microsoft.Extensions.Logging;
+using OpenTelemetry;
+using OpenTelemetry.Context.Propagation;
 using System.Diagnostics;
 
 namespace ConfigManagement.Shared.ServiceBus;
@@ -27,6 +29,8 @@ public class TopicPublisher<TMessage, TPayload> :
     IAsyncDisposable
     where TMessage : BaseMessage<TPayload>
 {
+    private static readonly TextMapPropagator Propagator =
+        Propagators.DefaultTextMapPropagator;
     private readonly ServiceBusSender _sender;
     private readonly ILogger<TopicPublisher<TMessage, TPayload>> _logger;
 
@@ -132,11 +136,29 @@ public class TopicPublisher<TMessage, TPayload> :
             serviceBusMessage.ApplicationProperties["timestampUtc"] =
                 message.TimestampUtc.ToString("O");
 
+            if (activity != null)
+            {
+                activity.SetTag("messaging.system", "azure_service_bus");
+                activity.SetTag("messaging.destination", _sender.EntityPath);
+                activity.SetTag("messaging.destination_kind", "topic");
+                activity.SetTag("messaging.operation", "publish");
+                activity.SetTag("messaging.message_id", serviceBusMessage.MessageId);
+
+                Propagator.Inject(
+                    new PropagationContext(activity.Context, Baggage.Current),
+                    serviceBusMessage,
+                    static (msg, key, value) =>
+                    {
+                        msg.ApplicationProperties[key] = value;
+                    });
+            }
+
             await _sender.SendMessageAsync(serviceBusMessage, cancellationToken);
 
             _logger.LogInformation(
-                "Published {MessageType}. CorrelationId={CorrelationId}",
+                "ServiceBus message published. MessageType={MessageType} MessageId={MessageId} CorrolationId={CorrolationId}",
                 typeof(TMessage).Name,
+                serviceBusMessage.MessageId,
                 message.CorrelationId
             );
         }
@@ -146,7 +168,7 @@ public class TopicPublisher<TMessage, TPayload> :
 
             _logger.LogError(
                 ex,
-                "Failed to publish {MessageType}. CorrelationId={CorrelationId}",
+                "Failed to publish {MessageType}. CorrolationId={CorrolationId}",
                 typeof(TMessage).Name,
                 message.CorrelationId
             );
