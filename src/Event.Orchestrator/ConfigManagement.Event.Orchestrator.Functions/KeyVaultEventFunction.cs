@@ -6,24 +6,26 @@ using Microsoft.Extensions.Logging;
 
 namespace ConfigManagement.Event.Orchestrator.Functions;
 
-public class Function1
+public class KeyVaultEventFunction
 {
-    private readonly ILogger<Function1> _logger;
+    private readonly ILogger<KeyVaultEventFunction> _logger;
 
-    public Function1(ILogger<Function1> logger)
+    public KeyVaultEventFunction(ILogger<KeyVaultEventFunction> logger)
     {
         _logger = logger;
     }
 
-    [Function(nameof(Function1))]
+    [Function(nameof(KeyVaultEventFunction))]
     public async Task Run(
-        [ServiceBusTrigger("mytopic", "mysubscription", Connection = "changme")]
+        [ServiceBusTrigger(
+            "mytopic", 
+            "mysubscription", 
+            Connection = "tbd"
+        )]
         ServiceBusReceivedMessage message,
         ServiceBusMessageActions messageActions)
     {
         _logger.LogInformation("Message ID: {id}", message.MessageId);
-        _logger.LogInformation("Message Body: {body}", message.Body);
-        _logger.LogInformation("Message Content-Type: {contentType}", message.ContentType);
 
             // Complete the message
         await messageActions.CompleteMessageAsync(message);
