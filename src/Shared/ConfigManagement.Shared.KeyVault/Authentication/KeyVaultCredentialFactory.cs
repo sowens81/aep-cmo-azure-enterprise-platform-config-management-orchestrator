@@ -56,7 +56,9 @@ public sealed class KeyVaultCredentialFactory : IKeyVaultCredentialFactory
                 "Failed to create Key Vault credential using {AuthType}",
                 _options.AuthType);
 
-            throw; // preserve stack trace
+            throw new InvalidOperationException(
+                $"Failed to create Key Vault credential using {_options.AuthType}",
+                ex);
         }
     }
 }

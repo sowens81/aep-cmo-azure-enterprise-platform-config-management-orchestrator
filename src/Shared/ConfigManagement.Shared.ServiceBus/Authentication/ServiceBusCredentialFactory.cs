@@ -104,7 +104,9 @@ public sealed class ServiceBusCredentialFactory
                 "Failed to create App Configuration credential using {AuthType}",
                 _options.AuthType);
 
-            throw; // Important: preserve the original stack trace
+            throw new InvalidOperationException(
+                $"Failed to create Service Bus credential using {_options.AuthType}",
+                ex);
         }
     }
 }

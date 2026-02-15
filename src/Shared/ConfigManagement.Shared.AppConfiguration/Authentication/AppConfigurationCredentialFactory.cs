@@ -55,7 +55,9 @@ public sealed class AppConfigurationCredentialFactory
                 "Failed to create App Configuration credential using {AuthType}",
                 _options.AuthType);
 
-            throw; // important: preserve stack trace
+            throw new InvalidOperationException(
+                $"Failed to create App Configuration credential using {_options.AuthType}",
+                ex);
         }
     }
 }
