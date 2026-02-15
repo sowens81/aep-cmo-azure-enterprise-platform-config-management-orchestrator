@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\ConfigManagement.Shared.ServiceBus\ConfigManagement.Shared.ServiceBus.csproj" />
+  </ItemGroup>
+
 </Project>

@@ -103,3 +103,9 @@ variable "servicebus_config" {
   })
 }
 
+variable "local_development" {
+  description = "Whether the deployment is for local development (enables additional outputs and relaxed access controls)"
+  type        = bool
+  default     = false
+
+}

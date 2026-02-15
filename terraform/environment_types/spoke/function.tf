@@ -1,4 +1,5 @@
 module "function" {
+  count = var.local_development ? 0 : 1
   source               = "../../modules/linux_function_app"
   name                 = var.function_name
   resource_group_name  = azurerm_resource_group.this.name

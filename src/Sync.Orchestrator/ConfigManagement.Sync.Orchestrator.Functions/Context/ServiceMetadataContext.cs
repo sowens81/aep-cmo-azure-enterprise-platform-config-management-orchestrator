@@ -1,7 +1,7 @@
-﻿using ConfigManagement.Sync.Orchestrator.Application.Interfaces;
-using ConfigManagement.Sync.Orchestrator.Application.Options;
+﻿using ConfigManagement.Sync.Orchestrator.Functions.Interfaces;
+using ConfigManagement.Sync.Orchestrator.Functions.Options;
 
-namespace ConfigManagement.Sync.Orchestrator.Application.Context;
+namespace ConfigManagement.Sync.Orchestrator.Functions.Context;
 
 /// <summary>
 /// Default implementation of <see cref="IServiceMetadata"/>.
@@ -26,9 +26,9 @@ public sealed class ServiceMetadataContext : IServiceMetadata
     public IReadOnlyDictionary<string, object> ToResourceAttributes()
         => new Dictionary<string, object>
         {
+            ["deployment.environment"] = EnvironmentName,
+            ["cloud.region"] = Region,
             ["organisation"] = Organisation,
-            ["region"] = Region,
-            ["environment.tier"] = EnvironmentTier,
-            ["environment.name"] = EnvironmentName
+            ["environment.tier"] = EnvironmentTier
         };
 }

@@ -2,7 +2,7 @@
 
 namespace ConfigManagement.Sync.Orchestrator.Infrastructure.Options;
 
-internal class EventServiceBusTopicOptions : IEventServiceBusTopicOptions
+public class HubAppConfigurationOptions : IHubAppConfigurationOptions
 {
-    public string TopicName { get; init; } = default!;
+    public string Endpoint { get; init; } = default!;
 }

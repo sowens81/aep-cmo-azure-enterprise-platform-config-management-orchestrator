@@ -1,11 +1,21 @@
-variable "topic_id" {
+variable "topic_name" {
   type        = string
-  description = "The ID of the Service Bus Topic to create this Subscription in."
+  description = "The name of the Service Bus Topic to create this Subscription in."
 }
 
 variable "subscription_name" {
   type        = string
   description = "The name of the Service Bus Subscription to create."
+}
+
+variable "servicebus_namespace_name" {
+  type        = string
+  description = "The name of the Service Bus Namespace where the Topic is located."
+}
+
+variable "servicebus_namespace_resource_group_name" {
+  type        = string
+  description = "The name of the resource group where the Service Bus Topic is located."
 }
 
 variable "lock_duration" {

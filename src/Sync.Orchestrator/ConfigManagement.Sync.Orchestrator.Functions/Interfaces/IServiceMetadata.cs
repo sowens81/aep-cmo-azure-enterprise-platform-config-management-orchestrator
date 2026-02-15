@@ -1,6 +1,4 @@
-using System.Collections.Generic;
-
-namespace ConfigManagement.Sync.Orchestrator.Application.Interfaces;
+namespace ConfigManagement.Sync.Orchestrator.Functions.Interfaces;
 
 /// <summary>
 /// Represents immutable metadata describing the current service instance.

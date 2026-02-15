@@ -1,4 +1,4 @@
-﻿namespace ConfigManagement.Sync.Orchestrator.Application.Options;
+﻿namespace ConfigManagement.Sync.Orchestrator.Functions.Options;
 
 /// <summary>
 /// Represents immutable service-level metadata used for

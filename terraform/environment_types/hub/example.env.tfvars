@@ -1,9 +1,9 @@
 # ============================
 # Global
 # ============================
-environment_tier  = "production"
-environment  = "prdhub"
-organisation = "xxuk"
+environment_tier = "production"
+environment      = "prdhub"
+organisation     = "xxuk"
 
 # ============================
 # Subscriptions

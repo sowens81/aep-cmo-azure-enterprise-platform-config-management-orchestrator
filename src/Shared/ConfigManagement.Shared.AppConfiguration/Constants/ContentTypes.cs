@@ -1,6 +1,6 @@
 ﻿namespace ConfigManagement.Shared.AppConfiguration.Constants;
 
-internal static class ContentTypes
+public static class ContentTypes
 {
     public const string PlainText = "text/plain";
 

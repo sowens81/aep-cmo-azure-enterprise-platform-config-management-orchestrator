@@ -2,7 +2,6 @@
 using ConfigManagement.Shared.KeyVault.Interfaces;
 using ConfigManagement.Sync.Orchestrator.Infrastructure.Interfaces;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace ConfigManagement.Sync.Orchestrator.Infrastructure.KeyVault;
 

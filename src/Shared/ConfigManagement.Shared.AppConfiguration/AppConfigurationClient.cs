@@ -15,12 +15,12 @@ namespace ConfigManagement.Shared.AppConfiguration;
 /// Each operation creates an OpenTelemetry span (<see cref="ActivityKind.Client"/>)
 /// to enable distributed tracing and dependency visibility.
 /// </remarks>
-public sealed class AppConfigurationClient : IAppConfigurationClient
+public abstract class AppConfigurationClient : IAppConfigurationClient
 {
     private readonly ConfigurationClient _client;
     private readonly ILogger<AppConfigurationClient> _logger;
 
-    public AppConfigurationClient(
+    protected AppConfigurationClient(
         IAppConfigurationOptions options,
         IAppConfigurationCredentialFactory credentialFactory,
         ILogger<AppConfigurationClient> logger)
@@ -39,7 +39,7 @@ public sealed class AppConfigurationClient : IAppConfigurationClient
     // GET
     // ------------------------------------------------------------
 
-    public async Task<bool> GetConfigurationSettingAsync(
+    public async Task<bool> CheckConfigurationSettingAsync(
         string key,
         string? label = null,
         CancellationToken cancellationToken = default)
@@ -49,7 +49,7 @@ public sealed class AppConfigurationClient : IAppConfigurationClient
             ActivityKind.Client);
 
         activity?.SetTag("rpc.system", "azure.appconfiguration");
-        activity?.SetTag("rpc.method", "GetConfigurationSetting");
+        activity?.SetTag("rpc.method", "CheckConfigurationSetting");
         activity?.SetTag("appconfig.key", key);
         activity?.SetTag("appconfig.label", label ?? "<null>");
 
@@ -66,6 +66,48 @@ public sealed class AppConfigurationClient : IAppConfigurationClient
         {
             activity?.SetStatus(ActivityStatusCode.Error, "Not Found");
             return false;
+        }
+        catch (Exception ex)
+        {
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+
+            _logger.LogError(
+                ex,
+                "Failed to get App Configuration key {Key}, Label={Label}",
+                key,
+                label ?? "<null>");
+
+            throw;
+        }
+    }
+
+    public async Task<ConfigurationSetting?> GetConfigurationSettingAsync(
+        string key,
+        string? label = null,
+        CancellationToken cancellationToken = default)
+    {
+        using var activity = Telemetry.Source.StartActivity(
+            "AppConfiguration Get",
+            ActivityKind.Client);
+
+        activity?.SetTag("rpc.system", "azure.appconfiguration");
+        activity?.SetTag("rpc.method", "GetConfigurationSetting");
+        activity?.SetTag("appconfig.key", key);
+        activity?.SetTag("appconfig.label", label ?? "<null>");
+
+        try
+        {
+            var keyValue =  await _client.GetConfigurationSettingAsync(
+                key,
+                label,
+                cancellationToken);
+
+            return keyValue;
+        }
+        catch (RequestFailedException ex) when (ex.Status == 404)
+        {
+            activity?.SetStatus(ActivityStatusCode.Error, "Not Found");
+            return null;
         }
         catch (Exception ex)
         {

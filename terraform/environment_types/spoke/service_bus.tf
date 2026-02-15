@@ -1,5 +1,5 @@
 module "servicebus_subscription_app_config_sync" {
-  source = "../../modules/service_bus_subscription"
+  source = "../../modules/existing_service_bus_subscription"
 
   providers                                = { azurerm = azurerm.hub }
   servicebus_namespace_name                = var.servicebus_config.namespace_name
@@ -9,7 +9,7 @@ module "servicebus_subscription_app_config_sync" {
 }
 
 module "servicebus_subscription_key_vault_sync" {
-  source = "../../modules/service_bus_subscription"
+  source = "../../modules/existing_service_bus_subscription"
 
   providers                                = { azurerm = azurerm.hub }
   servicebus_namespace_name                = var.servicebus_config.namespace_name

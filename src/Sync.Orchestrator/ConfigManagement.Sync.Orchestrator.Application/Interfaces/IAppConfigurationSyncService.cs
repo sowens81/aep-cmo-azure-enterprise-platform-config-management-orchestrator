@@ -4,9 +4,9 @@ using ConfigManagement.Shared.Domain.Results;
 
 namespace ConfigManagement.Sync.Orchestrator.Application.Interfaces;
 
-public interface IConfigSyncHandler
+public interface IAppConfigurationSyncService
 {
-    Task<Result<Unit>> HandleAsync(
-        ConfigSyncMessage message,
+    Task<Result<Unit>> SyncAppConfigurationAsync(
+        AppConfigMessage message,
         CancellationToken cancellationToken);
 }

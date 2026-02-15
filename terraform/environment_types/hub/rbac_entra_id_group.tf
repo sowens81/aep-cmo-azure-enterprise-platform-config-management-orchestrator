@@ -64,18 +64,3 @@ resource "azurerm_role_assignment" "entraid_group_servicebus_data_receiver_keyva
   principal_id       = azuread_group.this.object_id
   name               = random_uuid.entraid_group_role_servicebus_data_receiver_keyvault.result
 }
-
-## Service Bus Data Sender
-resource "random_uuid" "entraid_group_role_servicebus_data_sender_result" {
-  keepers = {
-    principal = azuread_group.this.object_id
-    scope     = module.servicebus.topics[var.servicebus_config.result_topic_name]
-  }
-}
-
-resource "azurerm_role_assignment" "entraid_group_servicebus_data_sender_result" {
-  scope              = module.servicebus.topics[var.servicebus_config.result_topic_name]
-  role_definition_id = data.azurerm_role_definition.sbus_data_sender.id
-  principal_id       = azuread_group.this.object_id
-  name               = random_uuid.entraid_group_role_servicebus_data_sender_result.result
-}

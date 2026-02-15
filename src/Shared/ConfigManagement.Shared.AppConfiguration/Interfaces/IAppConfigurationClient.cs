@@ -1,4 +1,5 @@
-﻿using ConfigManagement.Shared.AppConfiguration.Constants;
+﻿using Azure.Data.AppConfiguration;
+using ConfigManagement.Shared.AppConfiguration.Constants;
 
 namespace ConfigManagement.Shared.AppConfiguration.Interfaces;
 
@@ -32,7 +33,12 @@ public interface IAppConfigurationClient
     /// <returns>
     /// <c>true</c> if the configuration setting exists; otherwise, <c>false</c>.
     /// </returns>
-    Task<bool> GetConfigurationSettingAsync(
+    Task<bool> CheckConfigurationSettingAsync(
+        string key,
+        string? label = null,
+        CancellationToken cancellationToken = default);
+
+    Task<ConfigurationSetting?> GetConfigurationSettingAsync(
         string key,
         string? label = null,
         CancellationToken cancellationToken = default);

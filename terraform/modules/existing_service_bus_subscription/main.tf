@@ -1,7 +1,17 @@
+data "azurerm_servicebus_namespace" "this" {
+  name                = var.servicebus_namespace_name
+  resource_group_name = var.servicebus_namespace_resource_group_name
+}
+
+data "azurerm_servicebus_topic" "this" {
+  name         = var.topic_name
+  namespace_id = data.azurerm_servicebus_namespace.this.id
+}
+
 resource "azurerm_servicebus_subscription" "this" {
 
   name     = var.subscription_name
-  topic_id = var.topic_id
+  topic_id = data.azurerm_servicebus_topic.this.id
 
   lock_duration = var.lock_duration
 

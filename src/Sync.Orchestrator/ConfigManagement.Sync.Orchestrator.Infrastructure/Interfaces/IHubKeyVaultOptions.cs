@@ -2,6 +2,4 @@
 
 namespace ConfigManagement.Sync.Orchestrator.Infrastructure.Interfaces;
 
-public interface IHubKeyVaultOptions : IKeyVaultOptions
-{
-}
+public interface IHubKeyVaultOptions : IKeyVaultOptions {}

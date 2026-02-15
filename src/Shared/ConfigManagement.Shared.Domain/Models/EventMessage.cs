@@ -1,6 +1,6 @@
 ﻿using ConfigManagement.Shared.ServiceBus.Models;
 
-namespace ConfigManagement.Sync.Orchestrator.Domain.Models;
+namespace ConfigManagement.Shared.Domain.Models;
 
 public sealed class EventMessage<TPayload> : BaseMessage<TPayload>
 {

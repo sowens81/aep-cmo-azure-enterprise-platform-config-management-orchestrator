@@ -1,6 +1,7 @@
-# output "function_app" {
-#   value = module.function
-# }
+output "function_app" {
+  description = "Outputs from the Function App module"
+  value       = var.local_development ? null : module.function[0]
+}
 
 output "app_configuration" {
   description = "Outputs from the App Configuration module"
@@ -20,4 +21,9 @@ output "servicebus" {
 output "entraid_group_hub_access" {
   description = "Outputs from the Entra ID Group for Hub Access module"
   value       = azuread_group.this
+}
+
+output "service_bus_subscriptions" {
+  description = "List of Service Bus subscription resources created for the environment"
+  value       = concat([module.servicebus_subscription_app_config_event], [module.servicebus_subscription_key_vault_event])
 }
