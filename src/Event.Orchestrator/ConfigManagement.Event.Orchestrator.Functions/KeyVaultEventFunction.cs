@@ -25,7 +25,7 @@ public class KeyVaultEventFunction
         ServiceBusReceivedMessage message,
         ServiceBusMessageActions messageActions)
     {
-        _logger.LogInformation("Message ID: {id}", message.MessageId);
+        _logger.LogInformation("MessageID: {id}", message.MessageId);
 
             // Complete the message
         await messageActions.CompleteMessageAsync(message);

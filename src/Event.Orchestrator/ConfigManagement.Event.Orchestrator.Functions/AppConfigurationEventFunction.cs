@@ -19,7 +19,7 @@ public class AppConfigurationEventFunction
         ServiceBusReceivedMessage message,
         ServiceBusMessageActions messageActions)
     {
-        _logger.LogInformation("Message ID: {id}", message.MessageId);
+        _logger.LogInformation("MessageID: {id}", message.MessageId);
 
         await messageActions.CompleteMessageAsync(message);
     }
