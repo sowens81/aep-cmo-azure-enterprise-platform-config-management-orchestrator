@@ -17,4 +17,4 @@ builder.Services.AddKeyVault(builder.Configuration);
 builder.Services.AddScoped<IAppConfigurationSyncService, AppConfigurationSyncService>();
 builder.Services.AddScoped<IKeyVaultSyncService, KeyVaultSyncService>();
 
-builder.Build().Run();
+await builder.Build().RunAsync();
