@@ -1,0 +1,98 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - 'feat/*'
+      - 'feature/*'
+      - 'fix/*'
+      - 'docs/*'
+  pull_request:
+    branches:
+      - main
+
+jobs:
+
+  validation:
+    runs-on: ubuntu-latest
+    outputs:
+      docs_only: ${{ steps.detect.outputs.docs_only }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect Changed Files
+        id: detect
+        run: |
+          echo "Branch: $GITHUB_REF"
+          
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BASE_BRANCH="origin/${{ github.base_ref }}"
+          else
+            BASE_BRANCH="origin/main"
+          fi
+
+          git fetch origin
+
+          CHANGED_FILES=$(git diff --name-only $BASE_BRANCH HEAD)
+
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+
+          ALLOWED_REGEX='(\.md$|\.txt$|\.pdf$|\.puml$|\.jpg$|\.png$|\.gitignore$|changelog|\.dockerignore$|LICENSE$)'
+          DOCS_ONLY=true
+
+          for file in $CHANGED_FILES; do
+
+            # If file not allowed → not docs only
+            if [[ ! "$file" =~ $ALLOWED_REGEX ]]; then
+              DOCS_ONLY=false
+            fi
+
+            # Docs branch enforcement
+            if [[ "$GITHUB_REF" == refs/heads/docs/* ]]; then
+
+              if [[ "$file" == src/* ]] || [[ "$file" == terraform/* ]]; then
+                echo "❌ Docs branch cannot modify /src or /terraform"
+                echo "Rename branch to feat/{branch_name} or fix/{branch_name}"
+                exit 1
+              fi
+
+              if [[ ! "$file" =~ $ALLOWED_REGEX ]]; then
+                echo "❌ Invalid file detected: $file"
+                echo "Rename branch to feat/{branch_name} or fix/{branch_name}"
+                exit 1
+              fi
+
+            fi
+
+          done
+
+          echo "docs_only=$DOCS_ONLY" >> $GITHUB_OUTPUT
+          echo "Docs only: $DOCS_ONLY"
+
+  build:
+    runs-on: ubuntu-latest
+    needs: validation
+    if: needs.validation.outputs.docs_only != 'true' && !startsWith(github.ref, 'refs/heads/docs/')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build
+        run: echo "Running build..."
+
+  release:
+    runs-on: ubuntu-latest
+    needs: build
+    if: needs.validation.outputs.docs_only != 'true' && !startsWith(github.ref, 'refs/heads/docs/')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Release
+        run: echo "Running release..."

@@ -1,0 +1,130 @@
+name: $(Date:yyyyMMdd)$(Rev:.r)
+
+trigger:
+  branches:
+    include:
+      - main
+      - feat/*
+      - feature/*
+      - fix/*
+      - docs/*
+
+pr:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  isDocsBranch: $[ startsWith(variables['Build.SourceBranch'], 'refs/heads/docs/') ]
+
+stages:
+
+# ==========================================
+# VALIDATION STAGE
+# ==========================================
+- stage: validation
+  displayName: Validation Stage
+  jobs:
+    - job: validate_docs_rules
+      displayName: Validate Docs Rules
+      steps:
+        - checkout: self
+          fetchDepth: 0
+
+        - bash: |
+            echo "Source Branch: $(Build.SourceBranch)"
+            echo "Reason: $(Build.Reason)"
+
+            git fetch origin
+
+            # Determine base branch
+            if [ "$(Build.Reason)" == "PullRequest" ]; then
+              TARGET_BRANCH="$(System.PullRequest.TargetBranch)"
+            else
+              TARGET_BRANCH="origin/main"
+            fi
+
+            echo "Comparing against: $TARGET_BRANCH"
+
+            CHANGED_FILES=$(git diff --name-only $TARGET_BRANCH HEAD)
+
+            echo "Changed files:"
+            echo "$CHANGED_FILES"
+
+            ALLOWED_REGEX='(\.md$|\.txt$|\.pdf$|\.puml$|\.jpg$|\.png$|\.gitignore$|changelog|\.dockerignore$|LICENSE$)'
+            DOCS_ONLY=true
+
+            for file in $CHANGED_FILES; do
+
+              # Detect if non-doc file exists
+              if [[ ! "$file" =~ $ALLOWED_REGEX ]]; then
+                DOCS_ONLY=false
+              fi
+
+              # Block src or terraform for docs branches
+              if [[ "$(Build.SourceBranch)" == refs/heads/docs/* ]]; then
+                if [[ "$file" == src/* ]] || [[ "$file" == terraform/* ]]; then
+                  echo "❌ Docs branch cannot modify /src or /terraform"
+                  echo "Rename branch to feat/{branch_name} or fix/{branch_name}"
+                  exit 1
+                fi
+
+                if [[ ! "$file" =~ $ALLOWED_REGEX ]]; then
+                  echo "❌ Invalid file detected: $file"
+                  echo "Rename branch to feat/{branch_name} or fix/{branch_name}"
+                  exit 1
+                fi
+              fi
+
+            done
+
+            if [ "$DOCS_ONLY" = true ]; then
+              echo "##vso[task.setvariable variable=DocsOnlyChanges]true"
+              echo "Documentation-only change detected."
+            else
+              echo "##vso[task.setvariable variable=DocsOnlyChanges]false"
+            fi
+
+            echo "Validation complete."
+          displayName: Enforce Docs Policy
+
+# ==========================================
+# BUILD STAGE
+# ==========================================
+- stage: build
+  displayName: Build Stage
+  dependsOn: validation
+  condition: |
+    and(
+      succeeded(),
+      ne(variables['DocsOnlyChanges'], 'true'),
+      not(startsWith(variables['Build.SourceBranch'], 'refs/heads/docs/'))
+    )
+  jobs:
+    - job: build_job
+      displayName: Run Build
+      steps:
+        - script: echo "Running build..."
+          displayName: Build Step
+
+# ==========================================
+# RELEASE STAGE
+# ==========================================
+- stage: release
+  displayName: Release Stage
+  dependsOn: build
+  condition: |
+    and(
+      succeeded(),
+      ne(variables['DocsOnlyChanges'], 'true'),
+      not(startsWith(variables['Build.SourceBranch'], 'refs/heads/docs/'))
+    )
+  jobs:
+    - job: release_job
+      displayName: Run Release
+      steps:
+        - script: echo "Running release..."
+          displayName: Release Step

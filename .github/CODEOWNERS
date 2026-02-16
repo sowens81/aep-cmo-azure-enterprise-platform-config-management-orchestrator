@@ -1,0 +1,21 @@
+# Global default reviewers
+*       @sowens81
+
+# Source code requires backend team
+/src/   @sowens81
+
+# Terraform requires infra team
+/terraform/  @sowens81
+
+# ADO Pipelines
+*-pipeline.yml @sowens81
+*-pipeline.yaml @sowens81
+*-action.yml @sowens81
+*-action.yaml @sowens81
+
+# GitHub Actions
+
+
+# Docs require docs team
+*.md    @sowens81
+/docs/  @sowens81
