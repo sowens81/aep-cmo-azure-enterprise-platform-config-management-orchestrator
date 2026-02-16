@@ -6,5 +6,5 @@ namespace Aep.Cmo.Event.Orchestrator.Application.Interfaces;
 
 public interface IAppConfigurationEventService
 {
-    Task<Result<Unit>> EventAppConfigurationAsync(EventGridEvent<AppConfigEventData> message, CancellationToken cancellationToken);
+    Task<Result<Unit>> EventAppConfigurationAsync(AppConfigurationEvent message, CancellationToken cancellationToken);
 }

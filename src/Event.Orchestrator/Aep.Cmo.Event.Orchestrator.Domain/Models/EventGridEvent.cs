@@ -3,34 +3,29 @@ using System.Text.Json.Serialization;
 
 namespace Aep.Cmo.Event.Orchestrator.Domain.Models;
 
-public class EventGridEvent<TPayload>
+public class EventGridEvent
 {
     [Required]
-    public required string Id { get; set; }
+    [JsonPropertyName("id")]
+    public required string Id { get; init; }
 
     [Required]
-    public required string Topic { get; set; }
+    [JsonPropertyName("topic")]
+    public required string Topic { get; init; }
 
     [Required]
-    public required string Subject { get; set; }
-
-    [Required]
-    [JsonPropertyName("eventType")]
-    public required string EventType { get; set; }
-
-    [Required]
-    [JsonPropertyName("data")]
-    public required TPayload Data { get; set; }
-
-    [Required]
-    [JsonPropertyName("eventTime")]
-    public required DateTime EventTime { get; set; }
+    [JsonPropertyName("subject")]
+    public required string Subject { get; init; }
 
     [Required]
     [JsonPropertyName("dataVersion")]
-    public required string DataVersion { get; set; }
+    public required string DataVersion { get; init; }
 
     [Required]
     [JsonPropertyName("metadataVersion")]
-    public required string MetadataVersion { get; set; }
+    public required string MetadataVersion { get; init; }
+
+    [Required]
+    [JsonPropertyName("eventTime")]
+    public required DateTimeOffset EventTime { get; init; }
 }

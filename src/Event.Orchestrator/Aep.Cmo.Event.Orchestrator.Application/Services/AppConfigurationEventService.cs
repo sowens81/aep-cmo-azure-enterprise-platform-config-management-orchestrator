@@ -31,8 +31,9 @@ public class AppConfigurationEventService : IAppConfigurationEventService
         _appConfigTopicPublisherClient = appConfigTopicPublisherClient;
     }
 
-    public async Task<Result<Unit>> EventAppConfigurationAsync(EventGridEvent<AppConfigEventData> message, CancellationToken cancellationToken)
+    public async Task<Result<Unit>> EventAppConfigurationAsync(AppConfigurationEvent message, CancellationToken cancellationToken)
     {
+        _logger.LogInformation("Received AppConfigurationEvent: {Message}", message);
         throw new NotImplementedException();
     }
 }

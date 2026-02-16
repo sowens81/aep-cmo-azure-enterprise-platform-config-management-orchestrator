@@ -27,7 +27,7 @@ public class KeyVaultEventService : IKeyVaultEventService
         _keyVaultTopicPublisherClient = keyVaultTopicPublisherClient;
     }
 
-    public async Task<Result<Unit>> EventKeyVaultAsync(EventGridEvent<KeyVaultSecretEventData> message, CancellationToken cancellationToken)
+    public async Task<Result<Unit>> EventKeyVaultAsync(KeyVaultEvent message, CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
     }

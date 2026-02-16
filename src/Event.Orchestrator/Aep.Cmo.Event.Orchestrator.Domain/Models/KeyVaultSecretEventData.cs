@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace Aep.Cmo.Event.Orchestrator.Domain.Models;
 
-public sealed class KeyVaultSecretEventData
+public class KeyVaultSecretEventData
 {
     [Required]
     public required string Id { get; init; }

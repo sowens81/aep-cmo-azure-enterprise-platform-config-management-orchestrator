@@ -7,6 +7,6 @@ namespace Aep.Cmo.Event.Orchestrator.Application.Interfaces;
 
 public interface IKeyVaultEventService
 {
-    Task<Result<Unit>> EventKeyVaultAsync(EventGridEvent<KeyVaultSecretEventData> message, CancellationToken cancellationToken);
+    Task<Result<Unit>> EventKeyVaultAsync(KeyVaultEvent message, CancellationToken cancellationToken);
 }
     

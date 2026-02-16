@@ -42,12 +42,12 @@ public class KeyVaultEventFunction
     {
         var correlationId = message.CorrelationId ?? Guid.NewGuid().ToString();
 
-        EventGridEvent<KeyVaultSecretEventData> eventMessage;
+        KeyVaultEvent eventMessage;
 
         try
         {
             eventMessage = message.Body
-                .ToObjectFromJson<EventGridEvent<KeyVaultSecretEventData>>()!;
+                .ToObjectFromJson<KeyVaultEvent>()!;
         }
         catch (Exception ex)
         {

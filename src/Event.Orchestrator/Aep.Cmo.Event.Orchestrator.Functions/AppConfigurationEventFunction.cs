@@ -27,33 +27,31 @@ public class AppConfigurationEventFunction
 
     [Function(nameof(AppConfigurationEventFunction))]
     public async Task Run(
-        [ServiceBusTrigger(
-            "%SBUS_APP_CONFIG_TOPIC%",
-            "%SBUS_APP_CONFIG_SUBSCRIPTION%",
-            Connection = "ServiceBusConnection"
-        )]
-        ServiceBusReceivedMessage message,
-        ServiceBusMessageActions messageActions,
-        CancellationToken ct
-        )
+    [ServiceBusTrigger(
+        "%SBUS_APP_CONFIG_TOPIC%",
+        "%SBUS_APP_CONFIG_SUBSCRIPTION%",
+        Connection = "ServiceBusConnection"
+    )]
+    ServiceBusReceivedMessage message,
+    ServiceBusMessageActions messageActions,
+    CancellationToken ct)
     {
         var correlationId = message.CorrelationId ?? Guid.NewGuid().ToString();
 
-        EventGridEvent<AppConfigEventData> eventMessage;
-
-
-        var payload = message.Body.ToString();
-
-        _logger.LogInformation("payload: {payload}", payload);
+        AppConfigurationEvent eventMessage;
 
         try
         {
             eventMessage = message.Body
-                .ToObjectFromJson<EventGridEvent<AppConfigEventData>>()!;
+                .ToObjectFromJson<AppConfigurationEvent>()!;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to deserialize message {MessageId}, CorrelationId: {CorrelationId}", message.MessageId, correlationId);
+            _logger.LogError(
+                ex,
+                "Failed to deserialize message {MessageId}, CorrelationId: {CorrelationId}",
+                message.MessageId,
+                correlationId);
 
             await messageActions.DeadLetterWithReasonAsync(
                 message,
@@ -87,7 +85,7 @@ public class AppConfigurationEventFunction
 
         activity?.SetTag("event.id", eventMessage.Id);
         activity?.SetTag("correlation.id", correlationId);
-        activity?.SetTag("message.type", eventMessage.EventType);
+        activity?.SetTag("message.type", eventMessage.EventType.ToString());
 
         using (_logger.BeginScope(new Dictionary<string, object?>
         {
@@ -95,16 +93,20 @@ public class AppConfigurationEventFunction
             ["MessageType"] = eventMessage.EventType
         }))
         {
-            _logger.LogInformation("Starting event message processing");
+            _logger.LogInformation(
+                "Processing AppConfiguration event {EventType} for key {Key}",
+                eventMessage.EventType,
+                eventMessage.Data.Key);
 
             var result = await _appConfigurationEventService
                 .EventAppConfigurationAsync(eventMessage, ct);
+
             if (!result.IsSuccess)
             {
                 activity?.SetStatus(ActivityStatusCode.Error, result.Error);
 
                 _logger.LogWarning(
-                    "Non-recoverable event failure for AppConfiguration Key {Key}: {Error}",
+                    "Non-recoverable event failure for key {Key}: {Error}",
                     eventMessage.Data.Key,
                     result.Error);
 
@@ -124,4 +126,5 @@ public class AppConfigurationEventFunction
             await messageActions.CompleteMessageAsync(message, ct);
         }
     }
+
 }
