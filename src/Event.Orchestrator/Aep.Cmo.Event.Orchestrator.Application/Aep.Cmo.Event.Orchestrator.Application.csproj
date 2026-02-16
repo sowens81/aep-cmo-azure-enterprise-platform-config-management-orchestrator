@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared\Aep.Cmo.Shared.AppConfiguration\Aep.Cmo.Shared.AppConfiguration.csproj" />
+    <ProjectReference Include="..\..\Shared\Aep.Cmo.Shared.Domain\Aep.Cmo.Shared.Domain.csproj" />
+    <ProjectReference Include="..\..\Shared\Aep.Cmo.Shared.KeyVault\Aep.Cmo.Shared.KeyVault.csproj" />
+    <ProjectReference Include="..\..\Shared\Aep.Cmo.Shared.ServiceBus\Aep.Cmo.Shared.ServiceBus.csproj" />
+    <ProjectReference Include="..\Aep.Cmo.Event.Orchestrator.Domain\Aep.Cmo.Event.Orchestrator.Domain.csproj" />
+    <ProjectReference Include="..\Aep.Cmo.Event.Orchestrator.Infrastructure\Aep.Cmo.Event.Orchestrator.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.2" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,49 @@
+[
+    {
+        "EventGridId": "123e4567-e89b-12d3-a456-426614174000",
+        "CorrelationId": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+        "TraceId": "4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7",
+        "Payload": {
+            "Key": "app/settings/featureX",
+            "Type": "KeyVaultReference",
+            "SyncAction": "Upsert"
+        },
+        "TimestampUtc": "2026-02-12T12:00:00Z"
+    },
+    {
+        "id": "d57e13be-d953-4b96-8878-b4ea7fae4d42",
+        "topic": "/subscriptions/ae2c0c20-a449-40ac-a265-849b9042d608/resourceGroups/xxuk-prdhub-uks-rg-configmgmt/providers/Microsoft.KeyVault/vaults/kvconfigsyncprdhubuks",
+        "subject": "SECRET-NAME",
+        "eventType": "Microsoft.KeyVault.SecretNewVersionCreated",
+        "data": {
+            "Id": "https://kvconfigsyncprdhubuks.vault.azure.net/secrets/SECRET-NAME/3bd0043a321e4672aef6e8fe2bb2a3d3",
+            "VaultName": "kvconfigsyncprdhubuks",
+            "ObjectType": "Secret",
+            "ObjectName": "SECRET-NAME",
+            "Version": "3bd0043a321e4672aef6e8fe2bb2a3d3",
+            "NBF": null,
+            "EXP": null
+        },
+        "dataVersion": "1",
+        "metadataVersion": "1",
+        "eventTime": "2026-02-16T15:22:52.1148939Z"
+    },
+    {
+        "id": "39dec1a8-cab1-4428-a14c-e7144cf14b3a",
+        "topic": "/subscriptions/ae2c0c20-a449-40ac-a265-849b9042d608/resourceGroups/xxuk-prdhub-uks-rg-configmgmt/providers/microsoft.appconfiguration/configurationstores/apcfgconfigsyncprdhubuks",
+        "subject": "https://apcfgconfigsyncprdhubuks.azconfig.io/kv/HUB:VNET:ID?label=SYNC_SPOKE&api-version=2023-11-01",
+        "eventType": "Microsoft.AppConfiguration.KeyValueModified",
+        "data": {
+            "key": "HUB:VNET:ID",
+            "label": "SYNC_SPOKE",
+            "etag": "THXGIemKtoFz9hLXXCAoS8PilLkVuPThqS8UT5dWWhw",
+            "syncToken": "zAJw6V16=NToxNyMyMTA5MTUxMA==;sn=21091510"
+        },
+        "dataVersion": "2",
+        "metadataVersion": "1",
+        "eventTime": "2026-02-16T15:11:53Z"
+    }
+]
+
+
+{"id":"39dec1a8-cab1-4428-a14c-e7144cf14b3a","topic":"/subscriptions/ae2c0c20-a449-40ac-a265-849b9042d608/resourceGroups/xxuk-prdhub-uks-rg-configmgmt/providers/microsoft.appconfiguration/configurationstores/apcfgconfigsyncprdhubuks","subject":"https://apcfgconfigsyncprdhubuks.azconfig.io/kv/HUB:VNET:ID?label=SYNC_SPOKE&api-version=2023-11-01","data":{"key":"HUB:VNET:ID","label":"SYNC_SPOKE","etag":"THXGIemKtoFz9hLXXCAoS8PilLkVuPThqS8UT5dWWhw","syncToken":"zAJw6V16=NToxNyMyMTA5MTUxMA==;sn=21091510"},"eventType":"Microsoft.AppConfiguration.KeyValueModified","dataVersion":"2","metadataVersion":"1","eventTime":"2026-02-16T15:11:53Z"}

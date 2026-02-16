@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Azure.Data.AppConfiguration" Version="1.8.0" />
+    <PackageReference Include="Azure.Data.Tables" Version="12.11.0" />
+    <PackageReference Include="Azure.Identity" Version="1.17.1" />
+    <PackageReference Include="Azure.Messaging.ServiceBus" Version="7.20.1" />
+    <PackageReference Include="Azure.Security.KeyVault.Secrets" Version="4.8.0" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared\Aep.Cmo.Shared.AppConfiguration\Aep.Cmo.Shared.AppConfiguration.csproj" />
+    <ProjectReference Include="..\..\Shared\Aep.Cmo.Shared.Domain\Aep.Cmo.Shared.Domain.csproj" />
+    <ProjectReference Include="..\..\Shared\Aep.Cmo.Shared.KeyVault\Aep.Cmo.Shared.KeyVault.csproj" />
+    <ProjectReference Include="..\Aep.Cmo.Sync.Orchestrator.Domain\Aep.Cmo.Sync.Orchestrator.Domain.csproj" />
+  </ItemGroup>
+
+  
+</Project>

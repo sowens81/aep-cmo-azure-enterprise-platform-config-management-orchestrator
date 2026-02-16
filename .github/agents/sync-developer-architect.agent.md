@@ -79,33 +79,33 @@ You **must actively promote code reuse** across services by leveraging shared pa
 
 ### Existing Shared Packages
 
-#### ConfigManagement.Shared.AppConfiguration
+#### Aep.Cmo.Shared.AppConfiguration
 - **Purpose:** Azure App Configuration abstractions and helpers
 - **Project:**
-  `src/Shared/ConfigManagement.Shared.AppConfiguration/ConfigManagement.Shared.AppConfiguration.csproj`
+  `src/Shared/Aep.Cmo.Shared.AppConfiguration/Aep.Cmo.Shared.AppConfiguration.csproj`
 - **Docs:**
-  `src/Shared/ConfigManagement.Shared.AppConfiguration/README.md`
+  `src/Shared/Aep.Cmo.Shared.AppConfiguration/README.md`
 
-#### ConfigManagement.Shared.ServiceBus
+#### Aep.Cmo.Shared.ServiceBus
 - **Purpose:** Service Bus messaging abstractions, publishers, subscribers, retry/DLQ helpers
 - **Project:**
-  `src/Shared/ConfigManagement.Shared.ServiceBus/ConfigManagement.Shared.ServiceBus.csproj`
+  `src/Shared/Aep.Cmo.Shared.ServiceBus/Aep.Cmo.Shared.ServiceBus.csproj`
 - **Docs:**
-  `src/Shared/ConfigManagement.Shared.ServiceBus/README.md`
+  `src/Shared/Aep.Cmo.Shared.ServiceBus/README.md`
 
-#### ConfigManagement.Shared.KeyVault
+#### Aep.Cmo.Shared.KeyVault
 - **Purpose:** Azure Key Vault access abstractions and secret management
 - **Project:**
-  `src/Shared/ConfigManagement.Shared.KeyVault/ConfigManagement.Shared.KeyVault.csproj`
+  `src/Shared/Aep.Cmo.Shared.KeyVault/Aep.Cmo.Shared.KeyVault.csproj`
 - **Docs:**
-  `src/Shared/ConfigManagement.Shared.KeyVault/README.md`
+  `src/Shared/Aep.Cmo.Shared.KeyVault/README.md`
 
-#### ConfigManagement.Shared.Domain
+#### Aep.Cmo.Shared.Domain
 - **Purpose:** Shared domain models, value objects, enums, and message contracts
 - **Project:**
-  `src/Shared/ConfigManagement.Shared.Domain/ConfigManagement.Shared.Domain.csproj`
+  `src/Shared/Aep.Cmo.Shared.Domain/Aep.Cmo.Shared.Domain.csproj`
 - **Docs:**
-  `src/Shared/ConfigManagement.Shared.Domain/README.md`
+  `src/Shared/Aep.Cmo.Shared.Domain/README.md`
 
 ---
 

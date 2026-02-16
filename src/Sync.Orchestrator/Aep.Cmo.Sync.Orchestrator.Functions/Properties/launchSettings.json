@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Azure Functions": {
+      "commandName": "Executable",
+      "executablePath": "func",
+      "commandLineArgs": "start",
+      "workingDirectory": "$(ProjectDir)"
+    }
+  }
+}

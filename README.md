@@ -97,12 +97,12 @@ dotnet build .\aep-cmo.sln -c Release
 
 The Functions host lives under:
 
-- `src/Sync.Orchestrator/ConfigManagement.Sync.Orchestrator.Functions`
+- `src/Sync.Orchestrator/Aep.Cmo.Sync.Orchestrator.Functions`
 
 Typical workflow:
 
 ```powershell
-cd .\src\Sync.Orchestrator\ConfigManagement.Sync.Orchestrator.Functions
+cd .\src\Sync.Orchestrator\Aep.Cmo.Sync.Orchestrator.Functions
 
 # Create a local.settings.json (not committed) containing the required environment variables.
 # Then start the Functions host:
