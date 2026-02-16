@@ -1,10 +1,11 @@
-using Azure.Messaging.ServiceBus;
 using Aep.Cmo.Event.Orchestrator.Application.Interfaces;
 using Aep.Cmo.Event.Orchestrator.Domain.Models;
 using Aep.Cmo.Event.Orchestrator.Functions.Extensions;
 using Aep.Cmo.Event.Orchestrator.Infrastructure.Messaging;
+using Azure.Messaging.ServiceBus;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
+using OpenTelemetry;
 using System.Diagnostics;
 
 namespace Aep.Cmo.Event.Orchestrator.Functions;
@@ -83,7 +84,10 @@ public class AppConfigurationEventFunction
             "AppConfigurationEvent.ProcessMessage",
             ActivityKind.Consumer);
 
+        
+
         activity?.SetTag("event.id", eventMessage.Id);
+        Baggage.SetBaggage("correlation.id", correlationId);
         activity?.SetTag("correlation.id", correlationId);
         activity?.SetTag("message.type", eventMessage.EventType.ToString());
 

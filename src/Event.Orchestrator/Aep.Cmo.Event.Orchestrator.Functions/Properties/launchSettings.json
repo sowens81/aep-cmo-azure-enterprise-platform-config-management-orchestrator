@@ -1,9 +1,10 @@
 {
   "profiles": {
-    "Aep.Cmo.Event.Orchestrator.Functions": {
-      "commandName": "Project",
-      "commandLineArgs": "--port 7076",
-      "launchBrowser": false
+    "Azure Functions": {
+      "commandName": "Executable",
+      "executablePath": "func",
+      "commandLineArgs": "start",
+      "workingDirectory": "$(ProjectDir)"
     }
   }
 }

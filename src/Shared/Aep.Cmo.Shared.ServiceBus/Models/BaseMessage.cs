@@ -44,8 +44,7 @@ public class BaseMessage<TPayload>
     /// end-to-end distributed tracing. The value may be <c>null</c> if tracing
     /// is not enabled or not available at the time of message creation.
     /// </remarks>
-    [Required]
-    public required string? Traceparent { get; init; }
+    public string? Traceparent { get; set; }
 
     /// <summary>
     /// Gets the strongly-typed payload carried by this message.
@@ -86,5 +85,10 @@ public class BaseMessage<TPayload>
     {
         CorrelationId = correlationId;
         Payload = payload;
+    }
+
+    public void SetTraceparent(string trace, string span)
+    {
+        Traceparent = $"00-{trace}-{span}-01";
     }
 }

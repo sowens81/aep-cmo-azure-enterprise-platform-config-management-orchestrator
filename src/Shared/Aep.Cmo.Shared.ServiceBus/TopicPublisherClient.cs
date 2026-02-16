@@ -55,6 +55,11 @@ public class TopicPublisherClient<TMessage, TPayload> :
             "ServiceBus Publish",
             ActivityKind.Producer);
 
+        if (activity != null)
+        {
+            message.SetTraceparent(activity.TraceId.ToString(), activity.SpanId.ToString());
+        }
+            
         try
         {
             var serviceBusMessage = new ServiceBusMessage(

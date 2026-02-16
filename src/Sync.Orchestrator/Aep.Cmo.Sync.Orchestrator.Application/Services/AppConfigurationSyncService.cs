@@ -46,7 +46,6 @@ public class AppConfigurationSyncService : IAppConfigurationSyncService
             ActivityKind.Internal);
 
         activity?.SetTag("config.key", message.ConfigKeyName);
-        activity?.SetTag("config.id", message.ConfigKeyId);
         activity?.SetTag("sync.type", message.Type.ToString());
         activity?.SetTag("sync.action", message.SyncAction.ToString());
 
