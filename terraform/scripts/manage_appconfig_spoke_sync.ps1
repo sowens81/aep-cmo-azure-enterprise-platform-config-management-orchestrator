@@ -71,7 +71,7 @@ param(
     [string]$SecretValue
 )
 
-function Ensure-AzCli {
+function Test-AzCli {
     try {
         az --version > $null 2>&1
     } catch {
@@ -88,7 +88,7 @@ function Set-AppConfigKey {
     Write-Host "Done."
 }
 
-function Delete-AppConfigKeyLabel {
+function Remove-AppConfigKeyLabel {
     param($appConfigName, $key, $label = 'SPOKE_SYNC')
     Write-Host "Deleting App Configuration key '$key' with label '$label' from '$appConfigName'..."
     az appconfig kv delete --name $appConfigName --key $key --label $label --yes --only-show-errors | Out-Null
@@ -96,7 +96,7 @@ function Delete-AppConfigKeyLabel {
     Write-Host "Done."
 }
 
-function Create-KeyVaultSecretAndReturnId {
+function New-KeyVaultSecretAndReturnId {
     param($vaultName, $secretName, $secretValue)
     Write-Host "Creating/Updating Key Vault secret '$secretName' in vault '$vaultName'..."
     $out = az keyvault secret set --vault-name $vaultName --name $secretName --value $secretValue --output json --only-show-errors
@@ -116,7 +116,7 @@ function Update-KeyVaultSecret {
     Write-Host "Secret updated. id=$($json.id)"
 }
 
-function Delete-KeyVaultSecret {
+function Remove-KeyVaultSecret {
     param($vaultName, $secretName)
     Write-Host "Deleting Key Vault secret '$secretName' from vault '$vaultName'..."
     az keyvault secret delete --vault-name $vaultName --name $secretName --only-show-errors | Out-Null
@@ -125,7 +125,7 @@ function Delete-KeyVaultSecret {
 }
 
 # Entry
-Ensure-AzCli
+Test-AzCli
 
 try {
     switch ($Operation) {
@@ -137,7 +137,7 @@ try {
         'create-secret-link' {
             if (-not $AppConfigName -or -not $KeyVaultName -or -not $SecretName -or -not $SecretValue -or -not $KeyName) {
                 throw "Missing parameters for create-secret-link: AppConfigName, KeyVaultName, SecretName, SecretValue, KeyName are required." }
-            $secretId = Create-KeyVaultSecretAndReturnId -vaultName $KeyVaultName -secretName $SecretName -secretValue $SecretValue
+            $secretId = New-KeyVaultSecretAndReturnId -vaultName $KeyVaultName -secretName $SecretName -secretValue $SecretValue
             # Store the secret id in App Configuration under $KeyName with label SPOKE_SYNC
             Set-AppConfigKey -appConfigName $AppConfigName -key $KeyName -value $secretId
             break
@@ -154,15 +154,15 @@ try {
         }
         'delete-key-value' {
             if (-not $AppConfigName -or -not $KeyName) { throw "Missing parameters for delete-key-value: AppConfigName and KeyName are required." }
-            Delete-AppConfigKeyLabel -appConfigName $AppConfigName -key $KeyName
+            Remove-AppConfigKeyLabel -appConfigName $AppConfigName -key $KeyName
             break
         }
         'delete-key-and-secret' {
             if (-not $AppConfigName -or -not $KeyName -or -not $KeyVaultName -or -not $SecretName) { throw "Missing parameters for delete-key-and-secret: AppConfigName, KeyName, KeyVaultName, SecretName are required." }
             # delete the App Config entry with label SPOKE_SYNC
-            Delete-AppConfigKeyLabel -appConfigName $AppConfigName -key $KeyName
+            Remove-AppConfigKeyLabel -appConfigName $AppConfigName -key $KeyName
             # delete the Key Vault secret
-            Delete-KeyVaultSecret -vaultName $KeyVaultName -secretName $SecretName
+            Remove-KeyVaultSecret -vaultName $KeyVaultName -secretName $SecretName
             break
         }
     }
