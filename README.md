@@ -89,8 +89,8 @@ The goal is to let Platform/Operations manage “golden source” configuration 
 From the repo root:
 
 ```powershell
-dotnet restore .\aep-cmo.sln
-dotnet build .\aep-cmo.sln -c Release
+dotnet restore .\Aep.Cmo.sln
+dotnet build .\Aep.Cmo.sln -c Release
 ```
 
 ### Run the spoke Functions host locally (Sync Orchestrator)
