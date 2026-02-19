@@ -2,7 +2,6 @@
 using Aep.Cmo.Event.Orchestrator.Domain.Models;
 using Aep.Cmo.Event.Orchestrator.Infrastructure.Interfaces;
 using Aep.Cmo.Shared.Domain;
-using Aep.Cmo.Shared.Domain.Models;
 using Aep.Cmo.Shared.Domain.Results;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
@@ -15,20 +14,21 @@ public class KeyVaultEventService : IKeyVaultEventService
     new("ConfigManagement.KeyVault.Event.Orchestrator.Application");
     private readonly ILogger<KeyVaultEventService> _logger;
     private readonly IHubKeyVaultSecretClient _hubKeyVaultSecretClient;
-    private readonly IKeyVaultTopicPublisherClient<KeyVaultMessage> _keyVaultTopicPublisherClient;
+    private readonly IKeyVaultTopicPublisherClient _keyVaultTopicPublisherClient;
 
     public KeyVaultEventService(
         ILogger<KeyVaultEventService> logger,
         IHubKeyVaultSecretClient hubKeyVaultSecretClient,
-        IKeyVaultTopicPublisherClient<KeyVaultMessage> keyVaultTopicPublisherClient)
+        IKeyVaultTopicPublisherClient keyVaultTopicPublisherClient)
     {
         _logger = logger;
         _hubKeyVaultSecretClient = hubKeyVaultSecretClient;
         _keyVaultTopicPublisherClient = keyVaultTopicPublisherClient;
     }
 
-    public async Task<Result<Unit>> EventKeyVaultAsync(KeyVaultEvent message, CancellationToken cancellationToken)
+    public async Task<Result> EventKeyVaultAsync(KeyVaultEvent message, string correlationId, CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
     }
+
 }

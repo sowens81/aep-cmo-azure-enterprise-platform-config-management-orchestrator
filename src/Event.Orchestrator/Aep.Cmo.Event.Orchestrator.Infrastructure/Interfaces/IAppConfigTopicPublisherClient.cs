@@ -1,9 +1,17 @@
-﻿using Aep.Cmo.Shared.Domain.Models;
-using Aep.Cmo.Shared.ServiceBus.Interfaces;
+﻿using Aep.Cmo.Shared.Contracts.Messaging;
 
 namespace Aep.Cmo.Event.Orchestrator.Infrastructure.Interfaces;
 
-public interface IAppConfigTopicPublisherClient<TPayload>
-    : ITopicPublisherClient<SyncMessage<TPayload>, TPayload>
+/// <summary>
+/// Defines a contract for publishing App Configuration synchronization messages.
+/// </summary>
+public interface IAppConfigTopicPublisherClient
 {
+    /// <summary>
+    /// Publishes the specified <see cref="AppConfigMessage"/> to the topic.
+    /// </summary>
+    Task PublishAsync(
+        AppConfigMessage payload,
+        string correlationId,
+        CancellationToken cancellationToken = default);
 }

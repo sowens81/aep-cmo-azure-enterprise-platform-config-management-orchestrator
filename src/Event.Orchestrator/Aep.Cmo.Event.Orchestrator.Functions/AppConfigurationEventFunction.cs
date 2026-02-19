@@ -2,6 +2,7 @@ using Aep.Cmo.Event.Orchestrator.Application.Interfaces;
 using Aep.Cmo.Event.Orchestrator.Domain.Models;
 using Aep.Cmo.Event.Orchestrator.Functions.Extensions;
 using Aep.Cmo.Event.Orchestrator.Infrastructure.Messaging;
+using Aep.Cmo.Shared.Domain.Results;
 using Azure.Messaging.ServiceBus;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
@@ -28,14 +29,13 @@ public class AppConfigurationEventFunction
 
     [Function(nameof(AppConfigurationEventFunction))]
     public async Task Run(
-    [ServiceBusTrigger(
-        "%SBUS_APP_CONFIG_TOPIC%",
-        "%SBUS_APP_CONFIG_SUBSCRIPTION%",
-        Connection = "ServiceBusConnection"
-    )]
-    ServiceBusReceivedMessage message,
-    ServiceBusMessageActions messageActions,
-    CancellationToken ct)
+        [ServiceBusTrigger(
+            "%SBUS_APP_CONFIG_TOPIC%",
+            "%SBUS_APP_CONFIG_SUBSCRIPTION%",
+            Connection = "ServiceBusConnection")]
+        ServiceBusReceivedMessage message,
+        ServiceBusMessageActions messageActions,
+        CancellationToken ct)
     {
         var correlationId = message.CorrelationId ?? Guid.NewGuid().ToString();
 
@@ -84,12 +84,11 @@ public class AppConfigurationEventFunction
             "AppConfigurationEvent.ProcessMessage",
             ActivityKind.Consumer);
 
-        
-
         activity?.SetTag("event.id", eventMessage.Id);
-        Baggage.SetBaggage("correlation.id", correlationId);
         activity?.SetTag("correlation.id", correlationId);
         activity?.SetTag("message.type", eventMessage.EventType.ToString());
+
+        Baggage.SetBaggage("correlation.id", correlationId);
 
         using (_logger.BeginScope(new Dictionary<string, object?>
         {
@@ -103,32 +102,46 @@ public class AppConfigurationEventFunction
                 eventMessage.Data.Key);
 
             var result = await _appConfigurationEventService
-                .EventAppConfigurationAsync(eventMessage, ct);
+                .EventAppConfigurationAsync(eventMessage, correlationId, ct);
 
-            if (!result.IsSuccess)
+            if (result.IsSuccess)
             {
-                activity?.SetStatus(ActivityStatusCode.Error, result.Error);
+                activity?.SetStatus(ActivityStatusCode.Ok);
 
+                await messageActions.CompleteMessageAsync(message, ct);
+                return;
+            }
+
+            activity?.SetStatus(ActivityStatusCode.Error, result.Error);
+
+            if (result.IsRetryable)
+            {
                 _logger.LogWarning(
-                    "Non-recoverable event failure for key {Key}: {Error}",
+                    "Retryable failure for key {Key}: {Error}",
+                    eventMessage.Data.Key,
+                    result.Error);
+
+                await messageActions.AbandonMessageAsync(message, cancellationToken: ct);
+                return;
+            }
+
+            if (result.ShouldDeadLetter)
+            {
+                _logger.LogWarning(
+                    "Dead-lettering message for key {Key}: {Error}",
                     eventMessage.Data.Key,
                     result.Error);
 
                 await messageActions.DeadLetterWithReasonAsync(
                     message,
-                    "BusinessValidationFailed",
+                    result.ErrorCode ?? "BusinessFailure",
                     result.Error ?? "Unknown error",
                     ct);
 
                 return;
             }
 
-            activity?.SetStatus(ActivityStatusCode.Ok);
-
-            _logger.LogInformation("Event message processing completed");
-
-            await messageActions.CompleteMessageAsync(message, ct);
+            await messageActions.AbandonMessageAsync(message, cancellationToken: ct);
         }
     }
-
 }

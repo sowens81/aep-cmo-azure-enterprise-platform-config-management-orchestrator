@@ -9,11 +9,12 @@ var builder = FunctionsApplication.CreateBuilder(args);
 
 builder.ConfigureFunctionsWebApplication();
 
-builder.Services.AddServiceMetadata(builder.Configuration);
-builder.Services.AddTelemetry(builder.Configuration);
-builder.Services.AddAppConfiguration(builder.Configuration);
-builder.Services.AddKeyVault(builder.Configuration);
-builder.Services.AddScoped<IAppConfigurationSyncService, AppConfigurationSyncService>();
-builder.Services.AddScoped<IKeyVaultSyncService, KeyVaultSyncService>();
+builder.Services
+    .AddServiceMetadata(builder.Configuration)
+    .AddTelemetry(builder.Configuration)
+    .AddAppConfiguration(builder.Configuration)
+    .AddKeyVault(builder.Configuration)
+    .AddScoped<IAppConfigurationSyncService, AppConfigurationSyncService>()
+    .AddScoped<IKeyVaultSyncService, KeyVaultSyncService>();
 
 await builder.Build().RunAsync();

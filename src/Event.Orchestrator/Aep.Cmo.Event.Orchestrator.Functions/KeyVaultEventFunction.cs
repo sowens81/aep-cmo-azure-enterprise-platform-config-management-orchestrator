@@ -1,11 +1,8 @@
-using Azure.Messaging.ServiceBus;
 using Aep.Cmo.Event.Orchestrator.Application.Interfaces;
-using Aep.Cmo.Event.Orchestrator.Application.Services;
 using Aep.Cmo.Event.Orchestrator.Domain.Models;
 using Aep.Cmo.Event.Orchestrator.Functions.Extensions;
 using Aep.Cmo.Event.Orchestrator.Infrastructure.Messaging;
-using Aep.Cmo.Shared.Domain.Models;
-using Aep.Cmo.Shared.ServiceBus.Interfaces;
+using Azure.Messaging.ServiceBus;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;

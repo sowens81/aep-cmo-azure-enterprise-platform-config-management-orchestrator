@@ -1,23 +1,39 @@
 ﻿using Aep.Cmo.Event.Orchestrator.Infrastructure.Interfaces;
-using Aep.Cmo.Shared.Domain.Models;
-using Aep.Cmo.Shared.ServiceBus;
+using Aep.Cmo.Shared.Contracts.Messaging;
 using Aep.Cmo.Shared.ServiceBus.Interfaces;
+using Aep.Cmo.Shared.ServiceBus.Messaging;
 using Microsoft.Extensions.Logging;
 
 namespace Aep.Cmo.Event.Orchestrator.Infrastructure.ServiceBus;
 
-public class AppConfigTopicPublisherClient<TPayload>
-    : TopicPublisherClient<SyncMessage<TPayload>, TPayload>,
-      IAppConfigTopicPublisherClient<TPayload>
+/// <summary>
+/// Publishes <see cref="AppConfigMessage"/> messages to the configured Service Bus topic.
+/// </summary>
+public sealed class AppConfigTopicPublisherClient
+    : IAppConfigTopicPublisherClient
 {
+    private readonly ITopicPublisherClient<AppConfigMessage> _publisher;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AppConfigTopicPublisherClient"/> class.
+    /// </summary>
     public AppConfigTopicPublisherClient(
-        IAppConfigServiceBusTopicOptions topicOptions,
-        IServiceBusOptions serviceBusOptions,
-        IServiceBusCredentialFactory credentialFactory,
-        ILogger<AppConfigTopicPublisherClient<TPayload>> logger)
-        : base(topicOptions, serviceBusOptions, credentialFactory, logger)
+        ITopicPublisherClient<AppConfigMessage> publisher)
     {
+        _publisher = publisher;
+    }
+
+    /// <inheritdoc />
+    public Task PublishAsync(
+        AppConfigMessage payload,
+        string correlationId,
+        CancellationToken cancellationToken = default)
+    {
+        var message = new TopicMessage<AppConfigMessage>(
+            payload,
+            correlationId,
+            DateTimeOffset.UtcNow);
+
+        return _publisher.PublishAsync(message, cancellationToken);
     }
 }
-
-

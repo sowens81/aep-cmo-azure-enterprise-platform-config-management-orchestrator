@@ -1,7 +1,7 @@
-﻿using Azure.Messaging.ServiceBus;
-using Aep.Cmo.Shared.ServiceBus.Interfaces;
-using Aep.Cmo.Shared.ServiceBus.Models;
+﻿using Aep.Cmo.Shared.ServiceBus.Interfaces;
+using Aep.Cmo.Shared.ServiceBus.Messaging;
 using Aep.Cmo.Shared.ServiceBus.OpenTelemetry;
+using Azure.Messaging.ServiceBus;
 using Microsoft.Extensions.Logging;
 using OpenTelemetry;
 using OpenTelemetry.Context.Propagation;
@@ -9,32 +9,44 @@ using System.Diagnostics;
 
 namespace Aep.Cmo.Shared.ServiceBus;
 
-public class TopicPublisherClient<TMessage, TPayload> :
-    ITopicPublisherClient<TMessage, TPayload>,
+/// <summary>
+/// Publishes strongly-typed messages to an Azure Service Bus topic
+/// with OpenTelemetry distributed tracing support.
+/// </summary>
+/// <typeparam name="TPayload">
+/// The type of the message payload.
+/// </typeparam>
+public sealed class TopicPublisherClient<TPayload> :
+    ITopicPublisherClient<TPayload>,
     IAsyncDisposable
-    where TMessage : BaseMessage<TPayload>
 {
     private static readonly TextMapPropagator Propagator =
         Propagators.DefaultTextMapPropagator;
-    private readonly ServiceBusSender _sender;
-    private readonly ILogger<TopicPublisherClient<TMessage, TPayload>> _logger;
 
+    private readonly ServiceBusSender _sender;
+    private readonly ILogger<TopicPublisherClient<TPayload>> _logger;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TopicPublisherClient{TPayload}"/> class.
+    /// </summary>
     public TopicPublisherClient(
         IServiceBusTopicOptions topic,
         IServiceBusOptions options,
         IServiceBusCredentialFactory credentialFactory,
-        ILogger<TopicPublisherClient<TMessage, TPayload>> logger)
+        ILogger<TopicPublisherClient<TPayload>> logger)
     {
+        ArgumentNullException.ThrowIfNull(topic);
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(credentialFactory);
+        ArgumentNullException.ThrowIfNull(logger);
+
         if (string.IsNullOrWhiteSpace(topic.TopicName))
             throw new ArgumentException("Topic name is required.", nameof(topic.TopicName));
 
         if (string.IsNullOrWhiteSpace(options.Endpoint))
             throw new ArgumentException("Endpoint is required.", nameof(options.Endpoint));
 
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-
-        if (credentialFactory is null)
-            throw new ArgumentNullException(nameof(credentialFactory));
+        _logger = logger;
 
         var client = new ServiceBusClient(
             options.Endpoint,
@@ -43,61 +55,56 @@ public class TopicPublisherClient<TMessage, TPayload> :
         _sender = client.CreateSender(topic.TopicName);
     }
 
+    /// <inheritdoc />
     public async Task PublishAsync(
-        TMessage message,
-        CancellationToken cancellationToken)
+        TopicMessage<TPayload> message,
+        CancellationToken cancellationToken = default)
     {
-        if (message is null)
-            throw new ArgumentNullException(nameof(message));
+        ArgumentNullException.ThrowIfNull(message);
 
-        // Create a Producer span for this publish operation.
         using var activity = Telemetry.Source.StartActivity(
             "ServiceBus Publish",
             ActivityKind.Producer);
 
-        if (activity != null)
+        if (activity is not null)
         {
-            message.SetTraceparent(activity.TraceId.ToString(), activity.SpanId.ToString());
+            activity.SetTag("messaging.system", "azure_service_bus");
+            activity.SetTag("messaging.destination", _sender.EntityPath);
+            activity.SetTag("messaging.destination_kind", "topic");
+            activity.SetTag("messaging.operation", "publish");
         }
-            
+
+        var serviceBusMessage = new ServiceBusMessage(
+            BinaryData.FromObjectAsJson(message))
+        {
+            MessageId = Guid.NewGuid().ToString(),
+            CorrelationId = message.CorrelationId,
+            ContentType = "application/json"
+        };
+
+        // Inject OpenTelemetry trace context into message headers
+        if (activity is not null)
+        {
+            Propagator.Inject(
+                new PropagationContext(activity.Context, Baggage.Current),
+                serviceBusMessage,
+                static (msg, key, value) =>
+                {
+                    msg.ApplicationProperties[key] = value;
+                });
+
+            activity.SetTag("messaging.message_id", serviceBusMessage.MessageId);
+        }
+
         try
         {
-            var serviceBusMessage = new ServiceBusMessage(
-                BinaryData.FromObjectAsJson(message))
-            {
-                CorrelationId = message.CorrelationId,
-                MessageId = Guid.NewGuid().ToString(),
-                ContentType = "application/json",
-            };
-
-            serviceBusMessage.ApplicationProperties["timestampUtc"] =
-                message.TimestampUtc.ToString("O");
-
-            if (activity != null)
-            {
-                activity.SetTag("messaging.system", "azure_service_bus");
-                activity.SetTag("messaging.destination", _sender.EntityPath);
-                activity.SetTag("messaging.destination_kind", "topic");
-                activity.SetTag("messaging.operation", "publish");
-                activity.SetTag("messaging.message_id", serviceBusMessage.MessageId);
-
-                Propagator.Inject(
-                    new PropagationContext(activity.Context, Baggage.Current),
-                    serviceBusMessage,
-                    static (msg, key, value) =>
-                    {
-                        msg.ApplicationProperties[key] = value;
-                    });
-            }
-
             await _sender.SendMessageAsync(serviceBusMessage, cancellationToken);
 
             _logger.LogInformation(
-                "ServiceBus message published. MessageType={MessageType} MessageId={MessageId} CorrolationId={CorrolationId}",
-                typeof(TMessage).Name,
+                "ServiceBus message published. MessageType={MessageType} MessageId={MessageId} CorrelationId={CorrelationId}",
+                typeof(TPayload).Name,
                 serviceBusMessage.MessageId,
-                message.CorrelationId
-            );
+                message.CorrelationId);
         }
         catch (Exception ex)
         {
@@ -105,15 +112,15 @@ public class TopicPublisherClient<TMessage, TPayload> :
 
             _logger.LogError(
                 ex,
-                "Failed to publish {MessageType}. CorrolationId={CorrolationId}",
-                typeof(TMessage).Name,
-                message.CorrelationId
-            );
+                "Failed to publish {MessageType}. CorrelationId={CorrelationId}",
+                typeof(TPayload).Name,
+                message.CorrelationId);
 
             throw;
         }
     }
 
+    /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
         try

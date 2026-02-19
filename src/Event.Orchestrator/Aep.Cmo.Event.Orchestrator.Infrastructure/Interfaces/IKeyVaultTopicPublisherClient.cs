@@ -1,10 +1,17 @@
-﻿using Aep.Cmo.Shared.Domain.Models;
-using Aep.Cmo.Shared.ServiceBus.Interfaces;
-using Aep.Cmo.Shared.ServiceBus.Models;
+﻿using Aep.Cmo.Shared.ServiceBus.Messaging;
 
 namespace Aep.Cmo.Event.Orchestrator.Infrastructure.Interfaces;
 
-public interface IKeyVaultTopicPublisherClient<TPayload>
-    : ITopicPublisherClient<SyncMessage<TPayload>, TPayload>
+/// <summary>
+/// Defines a contract for publishing Key Vault synchronization messages.
+/// </summary>
+public interface IKeyVaultTopicPublisherClient
 {
+    /// <summary>
+    /// Publishes the specified <see cref="KeyVaultMessage"/> to the topic.
+    /// </summary>
+    Task PublishAsync(
+        KeyVaultMessage payload,
+        string correlationId,
+        CancellationToken cancellationToken = default);
 }

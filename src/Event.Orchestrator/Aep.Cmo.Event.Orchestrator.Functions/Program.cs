@@ -9,12 +9,13 @@ var builder = FunctionsApplication.CreateBuilder(args);
 
 builder.ConfigureFunctionsWebApplication();
 
-builder.Services.AddServiceMetadata(builder.Configuration);
-builder.Services.AddTelemetry(builder.Configuration);
-builder.Services.AddAppConfiguration(builder.Configuration);
-builder.Services.AddKeyVault(builder.Configuration);
-builder.Services.AddServiceBus(builder.Configuration);
-builder.Services.AddScoped<IAppConfigurationEventService, AppConfigurationEventService>();
-builder.Services.AddScoped<IKeyVaultEventService, KeyVaultEventService>();
+builder.Services
+    .AddServiceMetadata(builder.Configuration)
+    .AddTelemetry(builder.Configuration)
+    .AddAppConfiguration(builder.Configuration)
+    .AddKeyVault(builder.Configuration)
+    .AddServiceBus(builder.Configuration)
+    .AddScoped<IAppConfigurationEventService, AppConfigurationEventService>()
+    .AddScoped<IKeyVaultEventService, KeyVaultEventService>();
 
 await builder.Build().RunAsync();

@@ -1,6 +1,7 @@
 ﻿using Aep.Cmo.Event.Orchestrator.Infrastructure.Interfaces;
 using Aep.Cmo.Event.Orchestrator.Infrastructure.Options;
 using Aep.Cmo.Event.Orchestrator.Infrastructure.ServiceBus;
+using Aep.Cmo.Shared.ServiceBus;
 using Aep.Cmo.Shared.ServiceBus.Authentication;
 using Aep.Cmo.Shared.ServiceBus.Enums;
 using Aep.Cmo.Shared.ServiceBus.Interfaces;
@@ -17,6 +18,9 @@ public static class ServiceBusExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
+        // -------------------------
+        // Topic Options
+        // -------------------------
 
         services
             .AddOptions<AppConfigServiceBusTopicOptions>()
@@ -31,6 +35,10 @@ public static class ServiceBusExtensions
             .Validate(o => !string.IsNullOrWhiteSpace(o.TopicName),
                 "Service bus topic name is missing for KeyVaultSync")
             .ValidateOnStart();
+
+        // -------------------------
+        // Core ServiceBus Options
+        // -------------------------
 
         services
             .AddOptions<ServiceBusOptions>()
@@ -56,6 +64,10 @@ public static class ServiceBusExtensions
             })
             .ValidateOnStart();
 
+        // -------------------------
+        // Options Binding
+        // -------------------------
+
         services.AddSingleton<IAppConfigServiceBusTopicOptions>(sp =>
             sp.GetRequiredService<IOptions<AppConfigServiceBusTopicOptions>>().Value);
 
@@ -68,14 +80,19 @@ public static class ServiceBusExtensions
         services.AddSingleton<IServiceBusAuthOptions>(sp =>
             sp.GetRequiredService<IOptions<ServiceBusAuthOptions>>().Value);
 
+        // -------------------------
+        // Infrastructure Services
+        // -------------------------
+
         services.AddSingleton<IServiceBusCredentialFactory, ServiceBusCredentialFactory>();
 
-        services.AddScoped(typeof(IAppConfigTopicPublisherClient<>), typeof(AppConfigTopicPublisherClient<>));
-        services.AddScoped(typeof(IKeyVaultTopicPublisherClient<>), typeof(KeyVaultTopicPublisherClient<>));
+        // Generic core publisher
+        services.AddScoped(typeof(ITopicPublisherClient<>), typeof(TopicPublisherClient<>));
+
+        // Strongly typed publishers
+        services.AddScoped<IAppConfigTopicPublisherClient, AppConfigTopicPublisherClient>();
+        services.AddScoped<IKeyVaultTopicPublisherClient, KeyVaultTopicPublisherClient>();
 
         return services;
     }
 }
-
-
-

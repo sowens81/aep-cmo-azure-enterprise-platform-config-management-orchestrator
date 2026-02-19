@@ -3,12 +3,11 @@ using Aep.Cmo.Event.Orchestrator.Domain.Enum;
 using Aep.Cmo.Event.Orchestrator.Domain.Models;
 using Aep.Cmo.Event.Orchestrator.Infrastructure.Interfaces;
 using Aep.Cmo.Shared.AppConfiguration.Constants;
-using Aep.Cmo.Shared.Domain;
-using Aep.Cmo.Shared.Domain.Enum;
-using Aep.Cmo.Shared.Domain.Models;
+using Aep.Cmo.Shared.Contracts.Enum;
+using Aep.Cmo.Shared.Contracts.Messaging;
+using Aep.Cmo.Shared.Domain.Enums;
 using Aep.Cmo.Shared.Domain.Results;
 using Microsoft.Extensions.Logging;
-using OpenTelemetry;
 using System.Diagnostics;
 
 namespace Aep.Cmo.Event.Orchestrator.Application.Services;
@@ -20,21 +19,22 @@ public class AppConfigurationEventService : IAppConfigurationEventService
 
     private readonly ILogger<AppConfigurationEventService> _logger;
     private readonly IHubAppConfigurationClient _hubAppConfigurationClient;
-    private readonly IAppConfigTopicPublisherClient<AppConfigMessage> _publisher;
+    private readonly IAppConfigTopicPublisherClient _publisher;
 
     public AppConfigurationEventService(
         ILogger<AppConfigurationEventService> logger,
         IHubAppConfigurationClient hubAppConfigurationClient,
-        IHubKeyVaultSecretClient hubKeyVaultSecretClient, // kept for DI consistency
-        IAppConfigTopicPublisherClient<AppConfigMessage> publisher)
+        IHubKeyVaultSecretClient hubKeyVaultSecretClient,
+        IAppConfigTopicPublisherClient publisher)
     {
         _logger = logger;
         _hubAppConfigurationClient = hubAppConfigurationClient;
         _publisher = publisher;
     }
 
-    public async Task<Result<Unit>> EventAppConfigurationAsync(
+    public async Task<Result> EventAppConfigurationAsync(
         AppConfigurationEvent message,
+        string correlationId,
         CancellationToken cancellationToken)
     {
         using var activity = ActivitySource.StartActivity(
@@ -50,10 +50,10 @@ public class AppConfigurationEventService : IAppConfigurationEventService
             return message.EventType switch
             {
                 AppConfigurationEventType.KeyValueModified =>
-                    await HandleKeyValueModifiedAsync(message, cancellationToken),
+                    await HandleKeyValueModifiedAsync(message, correlationId, cancellationToken),
 
                 AppConfigurationEventType.KeyValueDeleted =>
-                    await HandleKeyValueDeletedAsync(message, cancellationToken),
+                    await HandleKeyValueDeletedAsync(message, correlationId, cancellationToken),
 
                 _ => HandleUnsupportedEvent(message)
             };
@@ -67,141 +67,72 @@ public class AppConfigurationEventService : IAppConfigurationEventService
                 "Unhandled error processing AppConfiguration event for key {Key}",
                 message.Data.Key);
 
-            throw; // allow ServiceBus retry
+            return Result.Failure(
+                ResultStatus.TransientFailure,
+                "Unhandled exception occurred.");
         }
     }
 
-    // ------------------------------------------------------------
-    // MODIFIED FLOW
-    // ------------------------------------------------------------
-
-    private async Task<Result<Unit>> HandleKeyValueModifiedAsync(
+    private async Task<Result> HandleKeyValueModifiedAsync(
         AppConfigurationEvent message,
+        string correlationId,
         CancellationToken cancellationToken)
     {
-        using var activity = ActivitySource.StartActivity(
-            "AppConfigurationEventService.HandleKeyValueModified",
-            ActivityKind.Internal);
-
         var key = message.Data.Key;
-
-        activity?.SetTag("config.key", key);
-        activity?.SetTag("sync.action", SyncAction.Upsert.ToString());
-
-        _logger.LogInformation(
-            "Processing KeyValueModified event for key {Key}",
-            key);
 
         var hubSetting = await _hubAppConfigurationClient
             .GetConfigurationSettingAsync(key, cancellationToken: cancellationToken);
 
         if (hubSetting is null)
         {
-            _logger.LogWarning(
-                "Hub key {Key} not found for modified event",
-                key);
+            _logger.LogWarning("Hub key {Key} not found", key);
 
-            activity?.SetStatus(ActivityStatusCode.Error, "Hub key not found");
-
-            return Result<Unit>.Failure($"Hub key {key} not found.");
+            return Result.Failure(
+                ResultStatus.DeadLetter,
+                $"Hub key {key} not found.");
         }
 
         var messageType = DetermineMessageType(hubSetting);
 
         return await PublishAsync(
-            message,
             key,
             SyncAction.Upsert,
             messageType,
+            correlationId,
             cancellationToken);
     }
 
-    // ------------------------------------------------------------
-    // DELETE FLOW
-    // ------------------------------------------------------------
-
-    private async Task<Result<Unit>> HandleKeyValueDeletedAsync(
+    private Task<Result> HandleKeyValueDeletedAsync(
         AppConfigurationEvent message,
+        string correlationId,
         CancellationToken cancellationToken)
     {
-        using var activity = ActivitySource.StartActivity(
-            "AppConfigurationEventService.HandleKeyValueDeleted",
-            ActivityKind.Internal);
-
         var key = message.Data.Key;
 
-        activity?.SetTag("config.key", key);
-        activity?.SetTag("sync.action", SyncAction.Delete.ToString());
-
-        _logger.LogInformation(
-            "Processing KeyValueDeleted event for key {Key}",
-            key);
-
-        // Do NOT call App Configuration
-        // Sync layer will determine actual type during delete
-
-        return await PublishAsync(
-            message,
+        return PublishAsync(
             key,
             SyncAction.Delete,
-            ConfigSyncMessageType.Value, // default
+            ConfigSyncMessageType.Value,
+            correlationId,
             cancellationToken);
     }
 
-    // ------------------------------------------------------------
-    // PUBLISH LOGIC
-    // ------------------------------------------------------------
-
-    private async Task<Result<Unit>> PublishAsync(
-        AppConfigurationEvent message,
+    private async Task<Result> PublishAsync(
         string key,
         SyncAction action,
         ConfigSyncMessageType type,
+        string correlationId,
         CancellationToken cancellationToken)
     {
-        using var activity = ActivitySource.StartActivity(
-            "AppConfigurationEventService.Publish",
-            ActivityKind.Internal);
+        var payload = new AppConfigMessage(key, type, action);
 
-        activity?.SetTag("config.key", key);
-        activity?.SetTag("sync.action", action.ToString());
-        activity?.SetTag("sync.type", type.ToString());
+        await _publisher.PublishAsync(
+            payload,
+            correlationId,
+            cancellationToken);
 
-        var correlationId =
-            Baggage.GetBaggage("correlation.id")
-            ?? Activity.Current?.TraceId.ToString()
-            ?? Guid.NewGuid().ToString();
-
-        var payload = new AppConfigMessage
-        {
-            ConfigKeyName = key,
-            SyncAction = action,
-            Type = type
-        };
-
-        var syncMessage = new SyncMessage<AppConfigMessage>
-        {
-            CorrelationId = correlationId,
-            EventGridId = message.Id,
-            Payload = payload
-        };
-
-        await _publisher.PublishAsync(syncMessage, cancellationToken);
-
-        activity?.SetStatus(ActivityStatusCode.Ok);
-
-        _logger.LogInformation(
-            "Published sync message for key {Key} Action={Action} Type={Type}",
-            key,
-            action,
-            type);
-
-        return Result<Unit>.Success(Unit.Value);
+        return Result.Success();
     }
-
-    // ------------------------------------------------------------
-    // HELPERS
-    // ------------------------------------------------------------
 
     private static ConfigSyncMessageType DetermineMessageType(
         Azure.Data.AppConfiguration.ConfigurationSetting? hubSetting)
@@ -211,13 +142,10 @@ public class AppConfigurationEventService : IAppConfigurationEventService
             : ConfigSyncMessageType.Value;
     }
 
-    private Result<Unit> HandleUnsupportedEvent(AppConfigurationEvent message)
+    private Result HandleUnsupportedEvent(AppConfigurationEvent message)
     {
-        _logger.LogWarning(
-            "Unsupported AppConfiguration event type {EventType}",
-            message.EventType);
-
-        return Result<Unit>.Failure(
+        return Result.Failure(
+            ResultStatus.Ignore,
             $"Unsupported event type {message.EventType}");
     }
 }

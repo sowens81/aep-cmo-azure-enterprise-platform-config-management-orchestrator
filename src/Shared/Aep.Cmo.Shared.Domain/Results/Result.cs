@@ -1,18 +1,50 @@
-﻿namespace Aep.Cmo.Shared.Domain.Results;
+﻿using Aep.Cmo.Shared.Domain.Enums;
 
-public readonly struct Result<T>
+namespace Aep.Cmo.Shared.Domain.Results;
+
+public readonly struct Result
 {
-    public bool IsSuccess { get; }
-    public T? Value { get; }
+    public bool IsSuccess => Status == ResultStatus.Success;
+
+    public ResultStatus Status { get; }
+
     public string? Error { get; }
 
-    private Result(bool success, T? value, string? error)
+    public string? ErrorCode { get; }
+
+    public bool IsRetryable =>
+        Status is ResultStatus.Retry or ResultStatus.TransientFailure;
+
+    public bool ShouldDeadLetter =>
+        Status is ResultStatus.DeadLetter
+        or ResultStatus.PermanentFailure
+        or ResultStatus.ValidationError;
+
+    private Result(
+        ResultStatus status,
+        string? error,
+        string? errorCode)
     {
-        IsSuccess = success;
-        Value = value;
+        Status = status;
         Error = error;
+        ErrorCode = errorCode;
     }
 
-    public static Result<T> Success(T value) => new(true, value, null);
-    public static Result<T> Failure(string error) => new(false, default, error);
+    public static Result Success() =>
+        new(ResultStatus.Success, null, null);
+
+    public static Result Failure(
+        ResultStatus status,
+        string error,
+        string? errorCode = null)
+    {
+        if (status == ResultStatus.Success)
+            throw new ArgumentException(
+                "Failure result cannot have Success status.",
+                nameof(status));
+
+        ArgumentException.ThrowIfNullOrWhiteSpace(error);
+
+        return new(status, error, errorCode);
+    }
 }
