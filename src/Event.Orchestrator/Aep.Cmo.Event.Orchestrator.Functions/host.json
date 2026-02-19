@@ -3,17 +3,22 @@
   "logging": {
     "applicationInsights": {
       "samplingSettings": {
-        "isEnabled": true,
+        "isEnabled": false,
         "excludedTypes": "Request"
       },
-      "enableLiveMetricsFilters": true
+      "enableLiveMetricsFilters": false
     }
   },
   "extensions": {
     "serviceBus": {
-      "prefetchCount": 0,
-      "autoCompleteMessages": false,
-      "maxConcurrentCalls": 16
+      "clientRetryOptions": {
+        "mode": "exponential",
+        "tryTimeout": "00:02:00",
+        "delay": "00:00:00.80",
+        "maxDelay": "00:01:00",
+        "maxRetries": 5
+      },
+      "prefetchCount": 0
     }
   }
 }

@@ -136,7 +136,7 @@ Each subscription has its own dedicated DLQ at the broker level (standard Servic
     - App Configuration: translate `KeyValueModified` and `KeyValueDeleted` into normalized sync messages
       - For `KeyValueModified`: read the latest hub setting and classify `Payload.Type` based on content type (Value vs Key Vault reference)
       - For `KeyValueDeleted`: publish a delete sync message without reading hub state
-    - Key Vault (planned): only publish sync messages when the hub secret tag `SyncSpoke: true` is present; otherwise complete the ingress message with no downstream publish
+    - Key Vault (planned): only publish sync messages when the hub secret tag `SyncToSpoke: true` is present; otherwise complete the ingress message with no downstream publish
     - Publish normalized sync messages to the appropriate sync topics (`app-config-sync`, `key-vault-sync`)
 
 #### Spoke container
@@ -244,9 +244,9 @@ This design separates **ingestion** (raw Event Grid events) from **processing/pu
 3. Event Grid delivers the raw event into the **Service Bus topic** `key-vault-event` (ingress).
 4. Hub Event Orchestrator:
   - Validates the event type
-  - (planned) Reads hub secret metadata/value and checks tag `SyncSpoke: true`
+  - (planned) Reads hub secret metadata/value and checks tag `SyncToSpoke: true`
   - If tag is missing/false → complete the ingress message with no downstream publish
-5. If tag `SyncSpoke: true`, Hub publishes a normalized secret sync message to `key-vault-sync`.
+5. If tag `SyncToSpoke: true`, Hub publishes a normalized secret sync message to `key-vault-sync`.
 6. Each spoke processes the message from its subscription and upserts the latest secret value hub→spoke.
 
 ### Hub execution flow
@@ -275,10 +275,10 @@ sequenceDiagram
   else Key Vault event (planned)
     HF->>HF: Validate eventType
     HF->>HKV: Read secret metadata/value
-    HF->>HF: Check tag SyncSpoke == true
-    alt SyncSpoke is true
+    HF->>HF: Check tag SyncToSpoke == true
+    alt SyncToSpoke is true
       HF->>SBS: Publish SyncMessage<KeyVaultMessage> (Upsert)
-    else SyncSpoke missing/false
+    else SyncToSpoke missing/false
       HF-->>SBI: Complete message (no publish)
     end
   end

@@ -63,6 +63,45 @@ public class KeyVaultSecretClient : IKeyVaultSecretClient
         return true;
     }
 
+    public async Task<KeyVaultSecret?> GetSecretAsync(
+        string name,
+        CancellationToken cancellationToken = default)
+    {
+        using var activity = Telemetry.Source.StartActivity(
+            "KeyVault Get Secret",
+            ActivityKind.Client);
+
+        activity?.SetTag("kv.operation", "get");
+        activity?.SetTag("kv.secret.name", name);
+
+        try
+        {
+            var secret = await _client.GetSecretAsync(
+                name,
+                cancellationToken: cancellationToken);
+
+            activity?.SetTag("kv.secret.id", secret.Value.Id.ToString());
+
+            return secret;
+        }
+        catch (RequestFailedException ex) when (ex.Status == 404)
+        {
+            activity?.SetStatus(ActivityStatusCode.Error, "Secret not found");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+
+            _logger.LogError(
+                ex,
+                "Failed to retrieve Key Vault secret {Name}",
+                name);
+
+            throw;
+        }
+    }
+
     public async Task<(Uri? Id, string? Name, string? Value)?> GetSecretValueAsync(
         string name,
         CancellationToken cancellationToken = default)

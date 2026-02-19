@@ -81,7 +81,7 @@ public class AppConfigurationEventService : IAppConfigurationEventService
         var key = message.Data.Key;
 
         var hubSetting = await _hubAppConfigurationClient
-            .GetConfigurationSettingAsync(key, cancellationToken: cancellationToken);
+            .GetConfigurationSettingAsync(key, "SYNC_SPOKE", cancellationToken: cancellationToken);
 
         if (hubSetting is null)
         {

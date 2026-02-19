@@ -28,4 +28,17 @@ resource "azurerm_role_assignment" "cc_hub_sbus_data_owner" {
   name               = random_uuid.cc_hub_role_sbus.result
 }
 
+## App Configuration Data Reader
+resource "random_uuid" "cc_hub_role_appconfig" {
+  keepers = {
+    principal = data.azurerm_client_config.current.object_id
+    scope     = module.app_configuration.id
+  }
+}
 
+resource "azurerm_role_assignment" "cc_hub_appconfig_data_reader" {
+  scope              = module.app_configuration.id
+  role_definition_id = data.azurerm_role_definition.appconfig_data_reader.id
+  principal_id       = data.azurerm_client_config.current.object_id
+  name               = random_uuid.cc_hub_role_appconfig.result
+}

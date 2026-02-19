@@ -9,7 +9,7 @@ using System.Diagnostics;
 
 namespace Aep.Cmo.Event.Orchestrator.Functions;
 
-public class KeyVaultEventFunction
+public sealed class KeyVaultEventFunction
 {
     private readonly ILogger<KeyVaultEventFunction> _logger;
     private readonly IKeyVaultEventService _keyVaultEventService;
@@ -30,12 +30,10 @@ public class KeyVaultEventFunction
         [ServiceBusTrigger(
             "%SBUS_KEY_VAULT_TOPIC%",
             "%SBUS_KEY_VAULT_SUBSCRIPTION%",
-            Connection = "ServiceBusConnection"
-        )]
+            Connection = "ServiceBusConnection")]
         ServiceBusReceivedMessage message,
         ServiceBusMessageActions messageActions,
-        CancellationToken ct
-        )
+        CancellationToken ct)
     {
         var correlationId = message.CorrelationId ?? Guid.NewGuid().ToString();
 
@@ -48,7 +46,11 @@ public class KeyVaultEventFunction
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to deserialize message {MessageId}, CorrelationId: {CorrelationId}", message.MessageId, correlationId);
+            _logger.LogError(
+                ex,
+                "Failed to deserialize message {MessageId}, CorrelationId: {CorrelationId}",
+                message.MessageId,
+                correlationId);
 
             await messageActions.DeadLetterWithReasonAsync(
                 message,
@@ -61,12 +63,6 @@ public class KeyVaultEventFunction
 
         if (!ServiceBusMessageValidator.TryValidate(eventMessage, out var errors))
         {
-            _logger.LogWarning(
-                "Validation failed for message {MessageId}, CorrelationId: {CorrelationId}: {Errors}",
-                message.MessageId,
-                correlationId,
-                string.Join(" | ", errors));
-
             await messageActions.DeadLetterWithReasonAsync(
                 message,
                 "ValidationFailed",
@@ -77,12 +73,12 @@ public class KeyVaultEventFunction
         }
 
         using var activity = ActivitySource.StartActivity(
-            "AppConfigurationEvent.ProcessMessage",
+            "KeyVaultEvent.ProcessMessage",
             ActivityKind.Consumer);
 
         activity?.SetTag("event.id", eventMessage.Id);
         activity?.SetTag("correlation.id", correlationId);
-        activity?.SetTag("message.type", eventMessage.EventType);
+        activity?.SetTag("message.type", eventMessage.EventType.ToString());
 
         using (_logger.BeginScope(new Dictionary<string, object?>
         {
@@ -90,33 +86,38 @@ public class KeyVaultEventFunction
             ["MessageType"] = eventMessage.EventType
         }))
         {
-            _logger.LogInformation("Starting event message processing");
+            _logger.LogInformation("Starting KeyVault event processing");
 
             var result = await _keyVaultEventService
-                .EventKeyVaultAsync(eventMessage, ct);
-            if (!result.IsSuccess)
+                .EventKeyVaultAsync(eventMessage, correlationId, ct);
+
+            if (result.IsSuccess)
             {
-                activity?.SetStatus(ActivityStatusCode.Error, result.Error);
+                activity?.SetStatus(ActivityStatusCode.Ok);
 
-                _logger.LogWarning(
-                    "Non-recoverable event failure for KeyVault Secret {Secret}: {Error}",
-                    eventMessage.Data.ObjectName,
-                    result.Error);
-
-                await messageActions.DeadLetterWithReasonAsync(
-                    message,
-                    "BusinessValidationFailed",
-                    result.Error ?? "Unknown error",
-                    ct);
-
+                await messageActions.CompleteMessageAsync(message, ct);
                 return;
             }
 
-            activity?.SetStatus(ActivityStatusCode.Ok);
+            activity?.SetStatus(ActivityStatusCode.Error, result.Error);
 
-            _logger.LogInformation("Event message processing completed");
+            if (result.IsRetryable)
+            {
+                await messageActions.AbandonMessageAsync(message, cancellationToken: ct);
+                return;
+            }
 
-            await messageActions.CompleteMessageAsync(message, ct);
+            if (result.ShouldDeadLetter)
+            {
+                await messageActions.DeadLetterWithReasonAsync(
+                    message,
+                    result.ErrorCode ?? "BusinessFailure",
+                    result.Error ?? "Unknown error",
+                    ct);
+                return;
+            }
+
+            await messageActions.AbandonMessageAsync(message, cancellationToken: ct);
         }
     }
-}   
+}

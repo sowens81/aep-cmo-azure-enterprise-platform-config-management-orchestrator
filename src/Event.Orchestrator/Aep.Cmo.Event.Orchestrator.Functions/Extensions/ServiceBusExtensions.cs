@@ -8,6 +8,7 @@ using Aep.Cmo.Shared.ServiceBus.Interfaces;
 using Aep.Cmo.Shared.ServiceBus.Options;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Aep.Cmo.Event.Orchestrator.Functions.Extensions;
@@ -88,6 +89,26 @@ public static class ServiceBusExtensions
 
         // Generic core publisher
         services.AddScoped(typeof(ITopicPublisherClient<>), typeof(TopicPublisherClient<>));
+
+        services.AddScoped<ITopicPublisherClient<Aep.Cmo.Shared.Contracts.Messaging.AppConfigMessage>>(sp =>
+            new TopicPublisherClient<Aep.Cmo.Shared.Contracts.Messaging.AppConfigMessage>(
+                sp.GetRequiredService<IAppConfigServiceBusTopicOptions>(),
+                sp.GetRequiredService<IServiceBusOptions>(),
+                sp.GetRequiredService<IServiceBusCredentialFactory>(),
+                sp.GetRequiredService<ILogger<TopicPublisherClient<Aep.Cmo.Shared.Contracts.Messaging.AppConfigMessage>>>()
+            ));
+
+        services.AddScoped<ITopicPublisherClient<Aep.Cmo.Shared.ServiceBus.Messaging.KeyVaultMessage>>(sp =>
+            new TopicPublisherClient<Aep.Cmo.Shared.ServiceBus.Messaging.KeyVaultMessage>(
+                sp.GetRequiredService<IKeyVaultServiceBusTopicOptions>(),
+                sp.GetRequiredService<IServiceBusOptions>(),
+                sp.GetRequiredService<IServiceBusCredentialFactory>(),
+                sp.GetRequiredService<ILogger<TopicPublisherClient<Aep.Cmo.Shared.ServiceBus.Messaging.KeyVaultMessage>>>()
+            ));
+
+        // Strongly typed publishers
+        services.AddScoped<IAppConfigTopicPublisherClient, AppConfigTopicPublisherClient>();
+        services.AddScoped<IKeyVaultTopicPublisherClient, KeyVaultTopicPublisherClient>();
 
         // Strongly typed publishers
         services.AddScoped<IAppConfigTopicPublisherClient, AppConfigTopicPublisherClient>();
