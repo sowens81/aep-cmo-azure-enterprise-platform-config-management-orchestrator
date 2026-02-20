@@ -20,16 +20,19 @@ public class AppConfigurationEventService : IAppConfigurationEventService
     private readonly ILogger<AppConfigurationEventService> _logger;
     private readonly IHubAppConfigurationClient _hubAppConfigurationClient;
     private readonly IAppConfigTopicPublisherClient _publisher;
+    private readonly IServiceMetadata _serviceMetadata;
 
     public AppConfigurationEventService(
         ILogger<AppConfigurationEventService> logger,
         IHubAppConfigurationClient hubAppConfigurationClient,
         IHubKeyVaultSecretClient hubKeyVaultSecretClient,
-        IAppConfigTopicPublisherClient publisher)
+        IAppConfigTopicPublisherClient publisher,
+        IServiceMetadata serviceMetadata)
     {
         _logger = logger;
         _hubAppConfigurationClient = hubAppConfigurationClient;
         _publisher = publisher;
+        _serviceMetadata = serviceMetadata;
     }
 
     public async Task<Result> EventAppConfigurationAsync(
@@ -81,7 +84,7 @@ public class AppConfigurationEventService : IAppConfigurationEventService
         var key = message.Data.Key;
 
         var hubSetting = await _hubAppConfigurationClient
-            .GetConfigurationSettingAsync(key, "SYNC_SPOKE", cancellationToken: cancellationToken);
+            .GetConfigurationSettingAsync(key, _serviceMetadata.SyncLabel, cancellationToken: cancellationToken);
 
         if (hubSetting is null)
         {
@@ -124,7 +127,7 @@ public class AppConfigurationEventService : IAppConfigurationEventService
         string correlationId,
         CancellationToken cancellationToken)
     {
-        var payload = new AppConfigMessage(key, type, action);
+        var payload = new AppConfigMessage(key, _serviceMetadata.SyncLabel, type, action);
 
         await _publisher.PublishAsync(
             payload,

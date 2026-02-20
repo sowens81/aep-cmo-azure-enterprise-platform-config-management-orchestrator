@@ -16,6 +16,7 @@ namespace Aep.Cmo.Shared.Contracts.Messaging;
 /// </param>
 public sealed record AppConfigMessage(
     string ConfigKeyName,
+    string? Label,
     ConfigSyncMessageType Type,
     SyncAction SyncAction
 );

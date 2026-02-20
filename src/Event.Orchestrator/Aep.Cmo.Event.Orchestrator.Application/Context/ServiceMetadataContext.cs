@@ -1,7 +1,7 @@
-﻿using Aep.Cmo.Event.Orchestrator.Functions.Interfaces;
-using Aep.Cmo.Event.Orchestrator.Functions.Options;
+﻿using Aep.Cmo.Event.Orchestrator.Application.Interfaces;
+using Aep.Cmo.Event.Orchestrator.Application.Options;
 
-namespace Aep.Cmo.Event.Orchestrator.Functions.Context;
+namespace Aep.Cmo.Event.Orchestrator.Application.Context;
 
 /// <summary>
 /// Default implementation of <see cref="IServiceMetadata"/>.
@@ -13,6 +13,7 @@ public sealed class ServiceMetadataContext : IServiceMetadata
     public string EnvironmentTier { get; }
     public string EnvironmentName { get; }
     public string ServiceName { get; }
+    public string SyncLabel { get; }
 
     public ServiceMetadataContext(ServiceMetaDataOptions options)
     {
@@ -21,6 +22,7 @@ public sealed class ServiceMetadataContext : IServiceMetadata
         EnvironmentTier = options.EnvironmentTier;
         EnvironmentName = options.EnvironmentName;
         ServiceName = options.ServiceName;
+        SyncLabel = options.SyncLabel;
     }
 
     public IReadOnlyDictionary<string, object> ToResourceAttributes()

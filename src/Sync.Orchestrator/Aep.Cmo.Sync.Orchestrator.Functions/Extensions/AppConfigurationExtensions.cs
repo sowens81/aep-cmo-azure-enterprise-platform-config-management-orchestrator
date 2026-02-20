@@ -20,14 +20,14 @@ public static class AppConfigurationExtensions
     {
         services
             .AddOptions<AppConfigurationOptions>()
-            .Bind(configuration.GetSection("AppConfiguration:Hub"))
+            .Bind(configuration.GetSection("AppConfiguration:Spoke"))
             .Validate(o => !string.IsNullOrWhiteSpace(o.Endpoint),
                 "App Configuration Endpoint is missing")
             .ValidateOnStart();
 
         services
             .AddOptions<HubAppConfigurationOptions>()
-            .Bind(configuration.GetSection("AppConfiguration:Spoke"))
+            .Bind(configuration.GetSection("AppConfiguration:Hub"))
             .Validate(o => !string.IsNullOrWhiteSpace(o.Endpoint),
                 "App Configuration Endpoint is missing")
             .ValidateOnStart();

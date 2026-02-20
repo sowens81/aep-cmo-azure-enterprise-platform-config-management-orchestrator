@@ -1,4 +1,4 @@
-﻿namespace Aep.Cmo.Event.Orchestrator.Functions.Options;
+﻿namespace Aep.Cmo.Event.Orchestrator.Application.Options;
 
 /// <summary>
 /// Represents immutable service-level metadata used for
@@ -34,4 +34,9 @@ public sealed class ServiceMetaDataOptions
     /// The logical service name.
     /// </summary>
     public required string ServiceName { get; init; }
+
+        /// <summary>
+    /// The label used for synchronization.
+    /// </summary>
+    public required string SyncLabel { get; init; }
 }

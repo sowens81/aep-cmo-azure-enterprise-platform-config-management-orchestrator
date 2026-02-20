@@ -4,6 +4,7 @@ using Aep.Cmo.Event.Orchestrator.Application.Interfaces;
 using Microsoft.Azure.Functions.Worker.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Aep.Cmo.Event.Orchestrator.Application.Extensions;
 
 var builder = FunctionsApplication.CreateBuilder(args);
 

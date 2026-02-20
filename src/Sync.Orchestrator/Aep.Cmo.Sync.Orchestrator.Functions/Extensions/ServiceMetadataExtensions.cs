@@ -1,4 +1,5 @@
 ﻿using Aep.Cmo.Sync.Orchestrator.Functions.Context;
+using Aep.Cmo.Sync.Orchestrator.Functions.Interfaces;
 using Aep.Cmo.Sync.Orchestrator.Functions.Options;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,25 +26,6 @@ public static class ServiceMetadataExtensions
     /// <exception cref="InvalidOperationException">
     /// Thrown when the required service metadata configuration section is missing or cannot be bound.
     /// </exception>
-    /// <remarks>
-    /// This method:
-    /// <list type="bullet">
-    /// <item>
-    /// Binds configuration values to <see cref="ServiceMetaDataOptions"/>.
-    /// </item>
-    /// <item>
-    /// Creates a <see cref="ServiceMetadataContext"/> instance using the bound options.
-    /// </item>
-    /// <item>
-    /// Registers the context as a singleton to ensure consistent metadata usage
-    /// across the application lifetime.
-    /// </item>
-    /// </list>
-    /// 
-    /// The registered <see cref="ServiceMetadataContext"/> is typically used to enrich
-    /// telemetry resources, logging, and other cross-cutting concerns with
-    /// service-specific metadata.
-    /// </remarks>
     public static IServiceCollection AddServiceMetadata(
         this IServiceCollection services,
         IConfiguration configuration)
@@ -51,9 +33,8 @@ public static class ServiceMetadataExtensions
         var metadata = configuration.Get<ServiceMetaDataOptions>()
             ?? throw new InvalidOperationException("Service metadata missing.");
 
-        var context = new ServiceMetadataContext(metadata);
-
-        services.AddSingleton(context);
+        services.AddSingleton<IServiceMetadata>(
+            new ServiceMetadataContext(metadata));
 
         return services;
     }

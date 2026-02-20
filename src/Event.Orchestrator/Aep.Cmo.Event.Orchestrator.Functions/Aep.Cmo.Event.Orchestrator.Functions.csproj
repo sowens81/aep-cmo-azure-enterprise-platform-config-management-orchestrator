@@ -31,4 +31,8 @@
     <ProjectReference Include="..\Aep.Cmo.Event.Orchestrator.Application\Aep.Cmo.Event.Orchestrator.Application.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Context\" />
+  </ItemGroup>
+
 </Project>

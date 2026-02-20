@@ -7,5 +7,5 @@ public static class ContentTypes
     public const string Json = "application/json";
 
     public const string KeyVaultReference =
-        "application/vnd.microsoft.appconfig.keyvaultref+json";
+        "application/vnd.microsoft.appconfig.keyvaultref+json;charset=utf-8";
 }

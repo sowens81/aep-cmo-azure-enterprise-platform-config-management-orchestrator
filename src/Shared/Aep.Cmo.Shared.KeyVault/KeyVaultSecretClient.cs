@@ -17,6 +17,7 @@ namespace Aep.Cmo.Shared.KeyVault;
 /// </remarks>
 public class KeyVaultSecretClient : IKeyVaultSecretClient
 {
+    
     private readonly SecretClient _client;
     private readonly ILogger<KeyVaultSecretClient> _logger;
 
@@ -37,6 +38,8 @@ public class KeyVaultSecretClient : IKeyVaultSecretClient
 
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
+
+    public Uri VaultUri => _client.VaultUri;
 
     public async Task<bool> SecretExistsAsync(
         string name,

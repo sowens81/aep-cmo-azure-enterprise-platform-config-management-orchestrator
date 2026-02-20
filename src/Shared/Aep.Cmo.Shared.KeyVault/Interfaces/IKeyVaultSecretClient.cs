@@ -4,6 +4,8 @@ namespace Aep.Cmo.Shared.KeyVault.Interfaces;
 
 public interface IKeyVaultSecretClient
 {
+    Uri VaultUri { get; }
+
     Task<bool> SecretExistsAsync(
         string name,
         CancellationToken cancellationToken = default);

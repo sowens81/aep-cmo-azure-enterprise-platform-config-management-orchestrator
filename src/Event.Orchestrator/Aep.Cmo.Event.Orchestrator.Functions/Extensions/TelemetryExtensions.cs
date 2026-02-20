@@ -1,7 +1,8 @@
-﻿using Azure.Monitor.OpenTelemetry.AspNetCore;
-using Aep.Cmo.Event.Orchestrator.Functions.Context;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Aep.Cmo.Event.Orchestrator.Application.Context;
+using Aep.Cmo.Event.Orchestrator.Application.Interfaces;
+using Azure.Monitor.OpenTelemetry.AspNetCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 
@@ -51,19 +52,19 @@ public static class TelemetryExtensions
 
         services.ConfigureOpenTelemetryTracerProvider((sp, builder) =>
         {
-            var metadataContext =
-                sp.GetRequiredService<ServiceMetadataContext>();
+            var metadata =
+                sp.GetRequiredService<IServiceMetadata>();
 
             builder.SetResourceBuilder(
                 ResourceBuilder.CreateDefault()
                     .AddService(
-                        serviceName: metadataContext.ServiceName,
+                        serviceName: metadata.ServiceName,
                         serviceVersion: typeof(TelemetryExtensions)
                             .Assembly
                             .GetName()
                             .Version?
                             .ToString())
-                    .AddAttributes(metadataContext.ToResourceAttributes()));
+                    .AddAttributes(metadata.ToResourceAttributes()));
         });
 
         return services;

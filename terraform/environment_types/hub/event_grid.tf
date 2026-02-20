@@ -27,7 +27,7 @@ resource "azurerm_eventgrid_system_topic_event_subscription" "appconfig_shared_t
   advanced_filter {
     string_contains {
       key    = "data.label"
-      values = ["SYNC_SPOKE"]
+      values = ["SyncToSpoke"]
     }
   }
 

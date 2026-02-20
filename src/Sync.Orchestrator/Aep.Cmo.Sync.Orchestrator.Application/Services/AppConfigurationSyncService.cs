@@ -93,6 +93,7 @@ public class AppConfigurationSyncService : IAppConfigurationSyncService
         var hubSetting = await _hubAppConfigurationClient
             .GetConfigurationSettingAsync(
                 message.ConfigKeyName,
+                message.Label,
                 cancellationToken: cancellationToken);
 
         if (hubSetting is null)
@@ -108,6 +109,7 @@ public class AppConfigurationSyncService : IAppConfigurationSyncService
         var localExists = await _appConfigurationClient
             .CheckConfigurationSettingAsync(
                 message.ConfigKeyName,
+                message.Label,
                 cancellationToken: cancellationToken);
 
         if (localExists)
@@ -116,6 +118,7 @@ public class AppConfigurationSyncService : IAppConfigurationSyncService
                 .SetConfigurationSettingAsync(
                     message.ConfigKeyName,
                     hubValue,
+                    message.Label,
                     cancellationToken: cancellationToken);
         }
         else
@@ -124,6 +127,7 @@ public class AppConfigurationSyncService : IAppConfigurationSyncService
                 .AddConfigurationSettingAsync(
                     message.ConfigKeyName,
                     hubValue,
+                    message.Label,
                     contentType: hubContentType,
                     cancellationToken: cancellationToken);
         }
@@ -138,6 +142,7 @@ public class AppConfigurationSyncService : IAppConfigurationSyncService
         var localExists = await _appConfigurationClient
             .CheckConfigurationSettingAsync(
                 message.ConfigKeyName,
+                message.Label,
                 cancellationToken: cancellationToken);
 
         if (!localExists)
@@ -146,18 +151,20 @@ public class AppConfigurationSyncService : IAppConfigurationSyncService
         await _appConfigurationClient
             .DeleteConfigurationSettingAsync(
                 message.ConfigKeyName,
+                message.Label,
                 cancellationToken: cancellationToken);
 
         return Result.Success();
     }
 
     private async Task<Result> HandleKeyVaultReferenceUpsertAsync(
-        AppConfigMessage message,
-        CancellationToken cancellationToken)
+    AppConfigMessage message,
+    CancellationToken cancellationToken)
     {
         var hubSetting = await _hubAppConfigurationClient
             .GetConfigurationSettingAsync(
                 message.ConfigKeyName,
+                message.Label,
                 cancellationToken: cancellationToken);
 
         if (hubSetting is null)
@@ -170,9 +177,11 @@ public class AppConfigurationSyncService : IAppConfigurationSyncService
                 ResultStatus.ValidationError,
                 "Hub key is not a KeyVaultReference.");
 
+        // 1️⃣ Extract hub secret info
         var hubSecretUri = ExtractSecretUri(hubSetting.Value);
         var hubSecretName = hubSecretUri.Segments.Last().Trim('/');
 
+        // 2️⃣ Get hub secret value
         var hubSecret = await _hubKeyVaultSecretClient
             .GetSecretValueAsync(hubSecretName, cancellationToken);
 
@@ -183,10 +192,46 @@ public class AppConfigurationSyncService : IAppConfigurationSyncService
 
         var secretValue = hubSecret.Value.Value;
 
+        // 3️⃣ Create or update local secret
         if (!await _keyVaultSecretClient.SecretExistsAsync(hubSecretName, cancellationToken))
             await _keyVaultSecretClient.CreateSecretAsync(hubSecretName, secretValue, cancellationToken);
         else
             await _keyVaultSecretClient.SetSecretAsync(hubSecretName, secretValue, cancellationToken);
+
+        // 4️⃣ Build LOCAL secret URI (this is the important part)
+        var localSecretUri = new Uri($"{_keyVaultSecretClient.VaultUri.AbsoluteUri.TrimEnd('/')}/secrets/{hubSecretName}");
+
+        var keyVaultReferenceValue = JsonSerializer.Serialize(new
+        {
+            uri = localSecretUri.ToString()
+        });
+
+        // 5️⃣ Create or update local App Configuration key
+        var localExists = await _appConfigurationClient
+            .CheckConfigurationSettingAsync(
+                message.ConfigKeyName,
+                message.Label,
+                cancellationToken: cancellationToken);
+
+        if (localExists)
+        {
+            await _appConfigurationClient
+                .SetConfigurationSettingAsync(
+                    message.ConfigKeyName,
+                    keyVaultReferenceValue,
+                    message.Label,
+                    cancellationToken: cancellationToken);
+        }
+        else
+        {
+            await _appConfigurationClient
+                .AddConfigurationSettingAsync(
+                    message.ConfigKeyName,
+                    keyVaultReferenceValue,
+                    message.Label,
+                    contentType: ContentTypes.KeyVaultReference,
+                    cancellationToken: cancellationToken);
+        }
 
         return Result.Success();
     }
@@ -198,6 +243,7 @@ public class AppConfigurationSyncService : IAppConfigurationSyncService
         await _appConfigurationClient
             .DeleteConfigurationSettingAsync(
                 message.ConfigKeyName,
+                message.Label,
                 cancellationToken: cancellationToken);
 
         return Result.Success();

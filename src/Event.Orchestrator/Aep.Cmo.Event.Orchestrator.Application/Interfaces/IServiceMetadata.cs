@@ -1,4 +1,4 @@
-﻿namespace Aep.Cmo.Event.Orchestrator.Functions.Interfaces;
+﻿namespace Aep.Cmo.Event.Orchestrator.Application.Interfaces;
 
 /// <summary>
 /// Represents immutable metadata describing the current service instance.
@@ -40,11 +40,17 @@ public interface IServiceMetadata
     string ServiceName { get; }
 
     /// <summary>
+    /// Gets the synchronization label used to correlate related events across services.
+    /// </summary> 
+    string SyncLabel { get; }
+
+    /// <summary>
     /// Returns the metadata as OpenTelemetry resource attributes.
     /// </summary>
     /// <returns>
     /// A dictionary of key/value pairs suitable for use with
     /// <c>ResourceBuilder.AddAttributes</c>.
     /// </returns>
+    ///
     IReadOnlyDictionary<string, object> ToResourceAttributes();
 }

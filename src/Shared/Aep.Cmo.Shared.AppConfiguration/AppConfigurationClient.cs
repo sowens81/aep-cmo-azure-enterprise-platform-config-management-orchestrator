@@ -55,12 +55,9 @@ public class AppConfigurationClient : IAppConfigurationClient
 
         try
         {
-            await _client.GetConfigurationSettingAsync(
-                key,
-                label,
-                cancellationToken);
-
+            await _client.GetConfigurationSettingAsync(key, label, cancellationToken);
             return true;
+
         }
         catch (RequestFailedException ex) when (ex.Status == 404)
         {
