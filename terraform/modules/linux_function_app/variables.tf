@@ -42,9 +42,9 @@ variable "app_settings" {
 }
 
 variable "website_run_from_package" {
-  description = "Whether to set WEBSITE_RUN_FROM_PACKAGE"
+  description = "Whether to set WEBSITE_RUN_FROM_PACKAGE if Not Flex Consumption"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "tags" {

@@ -35,4 +35,5 @@ resource "azuread_group_member" "this" {
   count            = var.local_development ? 0 : 1
   group_object_id  = data.azuread_group.this.object_id
   member_object_id = module.function[0].identity_principal_id
+  depends_on = [ module.function[0] ]
 }

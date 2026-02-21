@@ -54,12 +54,12 @@ resource "azurerm_role_assignment" "entraid_group_servicebus_data_receiver_appco
 resource "random_uuid" "entraid_group_role_servicebus_data_receiver_keyvault" {
   keepers = {
     principal = azuread_group.this.object_id
-    scope     = module.servicebus.topics[var.servicebus_config.key_vault_event_topic_name]
+    scope     = module.servicebus.topics[var.servicebus_config.key_vault_sync_topic_name]
   }
 }
 
 resource "azurerm_role_assignment" "entraid_group_servicebus_data_receiver_keyvault" {
-  scope              = module.servicebus.topics[var.servicebus_config.key_vault_event_topic_name]
+  scope              = module.servicebus.topics[var.servicebus_config.key_vault_sync_topic_name]
   role_definition_id = data.azurerm_role_definition.sbus_data_receiver.id
   principal_id       = azuread_group.this.object_id
   name               = random_uuid.entraid_group_role_servicebus_data_receiver_keyvault.result

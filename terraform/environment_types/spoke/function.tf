@@ -7,11 +7,13 @@ module "function" {
   identity_name        = var.identity_name
   storage_account_name = var.storage_account_name
   app_settings = {
-    APPLICATIONINSIGHTS_CONNECTION_STRING = null # Set by the module if Application Insights is enabled
+    APPLICATIONINSIGHTS_CONNECTION_STRING = null
+    FUNCTIONS_EXTENSION_VERSION = "~4"
+     # Set by the module if Application Insights is enabled
     # -------------------------------------------------
     # Service Bus trigger bindings (FLAT KEYS REQUIRED)
     # -------------------------------------------------
-    ServiceBusConnection         = "Endpoint=sb://${var.servicebus_config.namespace_name}.servicebus.windows.net/"
+    ServiceBusConnection         = "${var.servicebus_config.namespace_name}.servicebus.windows.net/"
     SBUS_APP_CONFIG_TOPIC        = var.servicebus_config.app_config_sync_topic_name
     SBUS_APP_CONFIG_SUBSCRIPTION = module.servicebus_subscription_app_config_sync.subscription_name
     SBUS_KEY_VAULT_TOPIC         = var.servicebus_config.key_vault_sync_topic_name
