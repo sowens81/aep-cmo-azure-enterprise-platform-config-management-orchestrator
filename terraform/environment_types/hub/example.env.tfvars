@@ -1,39 +1,39 @@
 # ============================
 # Global
 # ============================
-environment_tier = "production"
-environment      = "prdhub"
-organisation     = "xxuk"
+environment_tier = "<devtest|production>"
+environment      = "<YOUR_ENVIRONMENT_NAME>"
+organisation     = "<YOUR_ORGANISATION>"
 
 # ============================
 # Subscriptions
 # ============================
-hub_subscription_id         = "00000000-0000-0000-0000-000000000000"
-environment_subscription_id = "00000000-0000-0000-0000-000000000000"
-tenant_id                   = "00000000-0000-0000-0000-000000000000"
+hub_subscription_id         = "<HUB_SUBSCRIPTION_ID>"
+environment_subscription_id = "<ENVIRONMENT_SUBSCRIPTION_ID>"
+tenant_id                   = "<TENANT_ID>"
 
 # ============================
 # Resource Group / Location
 # ============================
 
-resource_group_name = "xxuk-prdhub-uks-rg-configmgmt"
-location            = "uksouth"
+resource_group_name = "<YOUR_RESOURCE_GROUP_NAME>"
+location            = "<YOUR_LOCATION>"
 
 # ============================
 # Function App
 # ============================
 
-function_name = "xxuk-prdhub-uks-func-configmgmt"
-identity_name = "xxuk-prdhub-uks-mi-configmgmt"
+function_name = "<YOUR_FUNCTION_APP_NAME>"
+identity_name = "<YOUR_MANAGED_IDENTITY_NAME>"
 
-storage_account_name = "stconfigsyncprdhubuks"
+storage_account_name = "<YOUR_STORAGE_ACCOUNT_NAME>"
 
 # ============================
 # App Configuration / Key Vault
 # ============================
 
-app_configuration_name = "apcfgconfigsyncprdhubuks"
-key_vault_name         = "kvconfigsyncprdhubuks"
+app_configuration_name = "<YOUR_APP_CONFIGURATION_NAME>"
+key_vault_name         = "<YOUR_KEY_VAULT_NAME>"
 
 app_configuration_sku = "free"
 
@@ -42,30 +42,25 @@ app_configuration_sku = "free"
 # ============================
 
 tags = {
-  environment = "prdhub"
+  environment = "<YOUR_ENVIRONMENT_TAG>"
   workload    = "config-sync"
-  owner       = "platform-team"
+  owner       = "<OWNER_NAME_OR_TEAM>"
 }
 
-
-# ============================
-# Idempotency
-# ============================
-
-idempotency_table = "configSyncIdempotency"
 
 # ============================
 # Service Bus (Hub)
 # ============================
 
 servicebus_config = {
-  namespace_name              = "xxuk-prdhub-uks-sbus-configmgmt"
+  namespace_name              = "<YOUR_SERVICE_BUS_NAMESPACE>"
   app_config_sync_topic_name  = "app-config-sync"
   key_vault_sync_topic_name   = "key-vault-sync"
   app_config_event_topic_name = "app-config-event"
   key_vault_event_topic_name  = "key-vault-event"
-  result_topic_name           = "cfg-mgmt-result-telemetry"
 }
 
-entraid_spoke_access_group_name = "demo-spoke-config-management-consumers-entraid-group"
+entraid_spoke_access_group_name = "<HUB_ENTRAID_SPOKE_ACCESS_GROUP>"
+
+local_development = true
 

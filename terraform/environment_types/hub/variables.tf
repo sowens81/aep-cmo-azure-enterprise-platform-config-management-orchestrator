@@ -14,11 +14,16 @@ variable "organisation" {
   type        = string
 }
 
+variable "sync_label" {
+  description = "Label used for synchronization to spokes (e.g. SyncToSpoke)"
+  type        = string
+  default     = "SyncToSpoke"
+}
+
 variable "tenant_id" {
   description = "Azure Active Directory tenant ID"
   type        = string
 }
-
 
 variable "hub_subscription_id" {
   description = "Subscription ID of the hub where the Service Bus namespace is provisioned"
@@ -85,12 +90,6 @@ variable "tags" {
   default     = {}
 }
 
-variable "idempotency_table" {
-  description = "Name of the idempotency table in the storage account"
-  type        = string
-  default     = "configSyncIdempotency"
-}
-
 variable "servicebus_config" {
   description = "Service Bus configuration for the Function App to publish sync messages. Should include the namespace endpoint and topic/subscription names."
   type = object({
@@ -99,7 +98,6 @@ variable "servicebus_config" {
     app_config_event_topic_name = string
     key_vault_sync_topic_name   = string
     key_vault_event_topic_name  = string
-    result_topic_name           = string
   })
 }
 

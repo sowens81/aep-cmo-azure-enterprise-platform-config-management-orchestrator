@@ -20,15 +20,18 @@ public sealed class KeyVaultEventService : IKeyVaultEventService
     private readonly ILogger<KeyVaultEventService> _logger;
     private readonly IHubKeyVaultSecretClient _hubKeyVaultSecretClient;
     private readonly IKeyVaultTopicPublisherClient _publisher;
+    private readonly IServiceMetadata _serviceMetadata;
 
     public KeyVaultEventService(
         ILogger<KeyVaultEventService> logger,
         IHubKeyVaultSecretClient hubKeyVaultSecretClient,
-        IKeyVaultTopicPublisherClient keyVaultTopicPublisherClient)
+        IKeyVaultTopicPublisherClient keyVaultTopicPublisherClient,
+        IServiceMetadata serviceMetadata)
     {
         _logger = logger;
         _hubKeyVaultSecretClient = hubKeyVaultSecretClient;
         _publisher = keyVaultTopicPublisherClient;
+        _serviceMetadata = serviceMetadata;
     }
 
     public async Task<Result> EventKeyVaultAsync(
@@ -86,8 +89,9 @@ public sealed class KeyVaultEventService : IKeyVaultEventService
             if (!ShouldSyncToSpoke(hubSecret))
             {
                 _logger.LogInformation(
-                    "Secret {Secret} does not have SyncToSpoke=true. Skipping sync.",
-                    secretName);
+                    "Secret {Secret} does not have {SyncLabel}=true. Skipping sync.",
+                    secretName,
+                    _serviceMetadata.SyncLabel);
 
                 return Result.Success();
             }
@@ -140,12 +144,12 @@ public sealed class KeyVaultEventService : IKeyVaultEventService
             cancellationToken);
     }
 
-    private static bool ShouldSyncToSpoke(KeyVaultSecret secret)
+    private bool ShouldSyncToSpoke(KeyVaultSecret secret)
     {
         if (secret.Properties.Tags is null)
             return false;
 
-        if (!secret.Properties.Tags.TryGetValue("SyncToSpoke", out var value))
+        if (!secret.Properties.Tags.TryGetValue(_serviceMetadata.SyncLabel, out var value))
             return false;
 
         return string.Equals(

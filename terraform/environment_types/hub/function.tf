@@ -7,7 +7,7 @@ module "function" {
   identity_name        = var.identity_name
   storage_account_name = var.storage_account_name
   app_settings = {
-
+    APPLICATIONINSIGHTS_CONNECTION_STRING = null # Set by the module if Application Insights is enabled
     # -------------------------------------------------
     # Service Bus trigger bindings (FLAT KEYS REQUIRED)
     # -------------------------------------------------
@@ -25,21 +25,21 @@ module "function" {
     EnvironmentTier = var.environment_tier
     EnvironmentName = var.environment
     ServiceName     = "config-event-orchestrator"
+    SyncLabel       = var.sync_label
 
     # -----------------------------
     # Key Vault configuration
     # -----------------------------
-    KeyVault__Endpoint = "${module.key_vault.vault_uri}"
-
+    KeyVault__Hub__Endpoint  = "${module.key_vault.vault_uri}"
     KeyVault__Auth__AuthType = "ManagedIdentity"
 
     # -----------------------------
     # App Configuration configuration
     # -----------------------------
-    "AppConfiguration__Endpoint"       = "${module.app_configuration.endpoint}"
+    "AppConfiguration__Hub__Endpoint"  = "${module.app_configuration.endpoint}"
     "AppConfiguration__Auth__AuthType" = "ManagedIdentity"
 
-    # -----------------------------
+    # ----------------------------- 
     # Service Bus configuration
     # -----------------------------
     "ServiceBus__Endpoint"                         = "${var.servicebus_config.namespace_name}.servicebus.windows.net"

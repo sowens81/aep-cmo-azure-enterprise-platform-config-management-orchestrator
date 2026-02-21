@@ -1,0 +1,44 @@
+{
+  "IsEncrypted": false,
+  "LogLevel": {
+    "Default": "Information",
+    "Microsoft": "Information",
+    "Function": "Information"
+  },
+  "Host": {
+    "LocalHttpPort": 7071,
+    "CORS": "*"
+  },
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+
+    "ServiceBusConnection": "Endpoint=sb://<YOUR_SERVICE_BUS_NAMESPACE>.servicebus.windows.net/;SharedAccessKeyName=<YOUR_KEY_NAME>;SharedAccessKey=<YOUR_KEY_VALUE>",
+
+    "SBUS_APP_CONFIG_TOPIC": "app-config-event",
+    "SBUS_APP_CONFIG_SUBSCRIPTION": "app-config-event-subscription",
+    "SBUS_KEY_VAULT_TOPIC": "key-vault-event",
+    "SBUS_KEY_VAULT_SUBSCRIPTION": "key-vault-event-subscription",
+
+    "APPLICATIONINSIGHTS_CONNECTION_STRING": "<YOUR_APP_INSIGHTS_CONNECTION_STRING>",
+
+    "Organisation": "<YOUR_ORGANISATION>",
+    "Region": "<YOUR_REGION>",
+    "EnvironmentTier": "<devtest|production>",
+    "EnvironmentName": "<YOUR_ENVIRONMENT_NAME>",
+    "ServiceName": "<YOUR_SERVICE_NAME>",
+    "SyncLabel": "<YOUR_SYNC_LABEL>",
+
+    "KeyVault:Hub:Endpoint": "https://<YOUR_KEYVAULT_NAME>.vault.azure.net/",
+    "KeyVault:Auth:AuthType": "AzureCli",
+
+    "AppConfiguration:Hub:Endpoint": "https://<YOUR_APP_CONFIG>.azconfig.io",
+    "AppConfiguration:Auth:AuthType": "AzureCli",
+
+    "ServiceBus:Endpoint": "<YOUR_SERVICE_BUS_NAMESPACE>.servicebus.windows.net",
+    "ServiceBus:Auth:AuthType": "AzureCli",
+    "ServiceBus:Topics:KeyVaultSync:TopicName": "key-vault-sync",
+    "ServiceBus:Topics:AppConfigSync:TopicName": "app-config-sync"
+
+  }
+}

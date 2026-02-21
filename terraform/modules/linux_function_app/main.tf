@@ -15,7 +15,7 @@ resource "azurerm_storage_account" "this" {
 
 resource "azurerm_storage_container" "this" {
   name                  = "functionapp"
-  storage_account_id = azurerm_storage_account.this.id
+  storage_account_id    = azurerm_storage_account.this.id
   container_access_type = "private"
 }
 
@@ -28,10 +28,10 @@ resource "azurerm_service_plan" "this" {
 }
 
 resource "azurerm_function_app_flex_consumption" "this" {
-  name                        = var.name
-  location                    = var.location
-  resource_group_name         = var.resource_group_name
-  service_plan_id             = azurerm_service_plan.this.id
+  name                = var.name
+  location            = var.location
+  resource_group_name = var.resource_group_name
+  service_plan_id     = azurerm_service_plan.this.id
 
   storage_container_type      = "blobContainer"
   storage_container_endpoint  = "${azurerm_storage_account.this.primary_blob_endpoint}${azurerm_storage_container.this.name}"
@@ -45,7 +45,7 @@ resource "azurerm_function_app_flex_consumption" "this" {
   site_config {}
 
   app_settings = merge(var.app_settings, {
-    WEBSITE_RUN_FROM_PACKAGE  = var.website_run_from_package ? "1" : "0"
+    WEBSITE_RUN_FROM_PACKAGE        = var.website_run_from_package ? "1" : "0"
     StorageAccount__Table__Endpoint = "https://${azurerm_storage_account.this.name}.table.core.windows.net"
     StorageAccount__Blob__Endpoint  = "https://${azurerm_storage_account.this.name}.blob.core.windows.net"
   })

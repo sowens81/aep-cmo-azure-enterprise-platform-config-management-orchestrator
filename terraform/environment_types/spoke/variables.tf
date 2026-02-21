@@ -95,7 +95,6 @@ variable "servicebus_config" {
     namespace_name             = string
     app_config_sync_topic_name = string
     key_vault_sync_topic_name  = string
-    result_topic_name          = string
   })
 }
 
@@ -104,9 +103,14 @@ variable "hub_key_vault_uri" {
   type        = string
 }
 
+variable "hub_app_configuration_uri" {
+  description = "URI of an App Configuration instance in the hub (used for cross-tenant access from spoke Function App)"
+  type        = string
+}
+
 variable "local_development" {
   description = "Whether the deployment is for local development (enables additional outputs and relaxed access controls)"
   type        = bool
   default     = false
-  
+
 }

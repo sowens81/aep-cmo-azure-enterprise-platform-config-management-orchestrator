@@ -11,7 +11,7 @@ output "namespace_name" {
 output "endpoint" {
   description = "The endpoint of the Service Bus namespace"
   value       = azurerm_servicebus_namespace.this.endpoint
-  
+
 }
 
 output "topics" {
